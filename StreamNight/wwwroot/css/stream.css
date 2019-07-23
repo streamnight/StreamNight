@@ -1,0 +1,852 @@
+﻿.hidden {
+    display: none !important;
+}
+
+.softHidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.hideChat {
+    grid-template-columns: 1fr !important;
+    -ms-grid-columns: 1fr !important;
+    grid-template-rows: 1fr !important;
+    -ms-grid-rows: 1fr !important;
+}
+
+.hideViewers .stream-child:not(.vjs-fullscreen) {
+    max-height: calc(100vh - 2rem) !important;
+    transition: max-height ease-in-out 0.3s;
+}
+
+.hideViewers .video-js .vjs-tech {
+    position: relative;
+    max-height: calc(100vh - 2rem) !important;
+}
+
+.hideViewers #viewerDetails {
+    position: absolute;
+    transform: translateY(-100%);
+    transition: transform ease-in-out 0.3s, opacity ease-in-out 0.3s;
+}
+
+details summary ~ * {
+    animation: fade .1s ease-in-out reverse;
+}
+
+details[open] summary ~ * {
+    animation: fade .1s ease-in-out;
+}
+
+.optionsLabel {
+    grid-column: 1 / span 2;
+
+    margin: 0 0.2rem;
+    border-bottom: 1px solid darkgray;
+
+    text-align: left;
+    font-size: 0.8rem;
+}
+
+@keyframes fade {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@media screen and (max-width : 61.99rem) and (min-height : 55rem), (orientation : portrait) {
+    body {
+        display: flex !important;
+        flex-direction: column;
+        height: 100vh;
+    }
+
+    #chat {
+        flex: 1 1 auto;
+        transform: none;
+        transition: transform ease-in-out 0.3s, visibility ease-in-out 0.3s, opacity ease-in-out 0.3s;
+    }
+
+    .hideChat #chat {
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(100%);
+    }
+
+    #popups {
+        margin: 0 1rem 0 auto !important;
+        height: 4rem;
+        transition: height ease-in-out 0.3s;
+    }
+
+    .hideViewers #popups {
+        height: 1.2rem;
+    }
+
+    #streamContainer {
+        margin: 0.5rem 1rem !important;
+    }
+
+    #settingsPopup {
+        max-height: 35vh !important;
+    }
+
+    #emoji-picker {
+        transform: translateY(-92%);
+    }
+
+    #viewerDetails .popupEntry {
+        height: 3.6rem !important;
+    }
+
+    .popupEntry img {
+        height: 3rem !important;
+    }
+
+    .popupEntry:hover div::after {
+        width: 3rem !important;
+        height: 3rem !important;
+    }
+
+    .popupEntry p {
+        max-width: 3rem !important;
+    }
+}
+
+@media screen and (max-width : 61.99rem) and (max-height : 54.99rem), not all (orientation : portrait) {
+    body {
+        grid-template-columns: 1fr minmax(15rem, 20%);
+        grid-template-rows: 100vh;
+
+        -ms-grid-columns: 1fr minmax(15rem, 20%);
+        -ms-grid-rows: 100vh;
+    }
+
+    #streamContainer {
+        display: flex;
+        flex-direction: column;
+    }
+
+    #settingsPopup {
+        max-height: 80vh;
+    }
+
+    .moveChat #chat {
+        opacity: 0;
+        visibility: hidden;
+        transform: translateX(100%);
+        transition: transform ease-in-out 0.3s, visibility ease-in-out 0.3s, opacity ease-in-out 0.3s;
+    }
+
+    #emoji-picker {
+        transform: translateY(-92%);
+    }
+}
+
+@media screen and (min-width : 62rem) {
+    body {
+        grid-template-columns: 1fr minmax(20rem, 20%);
+        grid-template-rows: 100vh;
+
+        -ms-grid-columns: 1fr minmax(20rem, 20%);
+        -ms-grid-rows: 100vh;
+    }
+
+    .moveChat #chat {
+        opacity: 0;
+        visibility: hidden;
+        transform: translateX(100%);
+        transition: transform ease-in-out 0.3s, visibility ease-in-out 0.3s, opacity ease-in-out 0.3s;
+    }
+
+    #settingsPopup {
+        transform: translateY(3%) translateX(-3%) !important;
+        max-height: 80vh;
+    }
+}
+
+@media (max-width : 61.99rem) and (min-height : 55rem) and (-ms-high-contrast: active), 
+       (max-width : 61.99rem) and (min-height : 55rem) and (-ms-high-contrast: none),
+       (orientation : portrait) and (-ms-high-contrast: active), 
+       (orientation : portrait) and (-ms-high-contrast: none) {
+        #streamContainer, #video {
+            max-height: 60vh;
+        }
+}
+
+@media screen and (-ms-high-contrast: active) and (min-width : 62rem), (-ms-high-contrast: none) and (min-width : 62rem) {
+    #streamContainer video {
+        height: calc(100vh - 5.5rem);
+    }
+}
+
+body {
+    display: grid;
+    display: -ms-grid;
+
+    overflow: hidden;
+    font-family: Whitney, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    margin: 0 auto;
+    background-color: #0a0a0a;
+    color: #fff;
+}
+
+button {
+    background: #303235;
+    border-radius: 0.25rem;
+    border: 1px solid #202225;
+    color: white;
+}
+
+button:disabled {
+    opacity: 0.5;
+}
+
+/* Video */
+
+#qualitySelect {
+    background: transparent;
+    color: #fff;
+    width: auto;
+    border: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.resolutionOption {
+    text-shadow: none;
+}
+
+#video {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    animation: toNormalWidth ease-in-out 0.3s;
+}
+
+#video.fullscreen {
+    animation: toMaxWidth ease-in-out 0.3s;
+    width: 100vw;
+}
+
+@keyframes toMaxWidth {
+    0% {
+        width: 100%;
+    }
+    100% {
+        width: 100vw;
+    }
+}
+@keyframes toNormalWidth {
+    0% {
+        width: 100vw;
+    }
+
+    100% {
+        width: 100%;
+    }
+}
+
+#streamContainer {
+    position: relative;
+    display: grid;
+    display: -ms-grid;
+
+    grid-template-columns: 100%;
+    -ms-grid-columns: 100%;
+
+    margin-left: 0.5rem;
+    width: 100%;
+
+    z-index: 1;
+}
+
+.stream-status {
+    z-index: 1;
+    justify-self: center;
+    width: auto;
+    max-height: 100%;
+}
+
+#offlineNotice {
+    border-radius: 0.5rem;
+    background: rgb(0,0,0);
+}
+
+#onlineNotice {
+    position: absolute;
+}
+
+@supports (display : grid) {
+    #onlineNotice {
+        position: relative !important;
+    }
+}
+
+.stream-child > .vjs-big-play-button {
+    left: 50%;
+    top: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    z-index: 3;
+}
+
+.stream-child {
+    grid-row: 1;
+    grid-column: 1;
+    -ms-grid-row: 1;
+    -ms-grid-column: 1;
+    max-width: 100%;
+}
+
+.stream-child:not(.vjs-fullscreen) {
+    max-height: calc(100vh - 5.5rem);
+    transition: max-height ease-in-out 0.3s;
+}
+
+#popups {
+    display: grid;
+    display: -ms-grid;
+    grid-template-columns: repeat(2, 1fr);
+    -ms-grid-columns: (1fr)[2];
+    justify-content: flex-end;
+    width: 100%;
+    margin-left: 0.5rem;
+    position: relative;
+    z-index: 0;
+}
+
+#toggle-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    -ms-grid-columns: (1fr)[2];
+
+    grid-column: 1 / span 2;
+}
+
+#profile-options {
+    grid-column: 1 / span 2;
+    -ms-grid-column: 1;
+    -ms-grid-column-span: 3;
+}
+
+#navProfile {
+    width: calc(100% - 1rem);
+    height: calc(100% - 1rem);
+}
+
+#viewerData {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin: 0.5rem 1rem 0.5rem auto;
+}
+
+#viewerDetails {
+    background: none;
+    margin: 0;
+    justify-self: end;
+    margin-right: 0.5rem;
+    display: flex;
+    position: relative;
+    overflow-y: hidden;
+    grid-row: 1;
+    grid-column: 1 / span 2;
+    -ms-grid-row: 1;
+    -ms-grid-column: 2;
+    -ms-grid-column-span: 2;
+    transition: transform ease-in-out 0.3s, opacity ease-in-out 0.3s;
+    transform: none;
+}
+
+@media (hover: none) {
+    #viewerDetails::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+#viewerDetails .popupEntry {
+    height: 4.6rem;
+}
+
+#viewerDetails img {
+    margin-right: 0.3rem;
+}
+
+.typing img {
+    animation: typing 1s ease-in-out infinite alternate;
+    transition: transform ease-in-out 0.1s;
+}
+
+@keyframes typing {
+    0% {
+        transform: rotate(-10deg);
+    }
+
+    50% {
+        transform: rotate(10deg);
+    }
+
+    100% {
+        transform: rotate(-10deg);
+    }
+}
+
+.popupDetails {
+    border: 1px solid #202225;
+    position: fixed;
+    list-style: none;
+    background: #141414;
+
+    max-width: calc(100% - 1rem);
+    
+	scrollbar-width: thin;
+	scrollbar-color: #303235 #0e0e0e;
+
+    border-radius: 0.25rem;
+    padding: 0;
+    z-index: 5;
+}
+
+.popupDetails::-webkit-scrollbar {
+    height: 0.25rem;
+}
+
+.popupDetails::-webkit-scrollbar-thumb {
+    background-color: #303235;
+    border-radius: 0.125rem;
+}
+
+.popupEntry {
+    height: min-content;
+    align-self: flex-end;
+    border-radius: 0.25rem;
+    display: grid;
+    display: -ms-grid;
+}
+
+.popupEntry:hover p {
+    display: block !important;
+    opacity: 1;
+}
+
+.popupEntry:hover div::after {
+    position: absolute;
+    content: '';
+    display: block;
+    width: 4rem;
+    height: 4rem;
+    background: black;
+    opacity: 0.5;
+    z-index: -1;
+}
+
+.popupEntry img {
+    height: 4rem;
+    border-radius: 50%;
+    margin: 0.3rem;
+    margin-right: 1rem;
+
+    grid-row: 1;
+    grid-column: 1;
+    -ms-grid-row: 1;
+    -ms-grid-column: 1;
+
+    transition: opacity ease-in-out 0.15s;
+    opacity: 1;
+    z-index: 0;
+}
+
+.popupEntry div {
+    grid-row: 1;
+    grid-column: 1;
+    -ms-grid-row: 1;
+    -ms-grid-column: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    opacity: 1;
+}
+
+.popupEntry p {
+    max-width: 4rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    display: none;
+    opacity: 0;
+    transition: opacity ease-in-out 0.15s;
+}
+
+.hideViewers #toggleChatPlayer {
+    position: relative !important;
+    align-self: start;
+}
+
+#toggleChatPlayer {
+    position: fixed;
+    -ms-grid-column-align: start;
+    width: min-content;
+    background: none;
+    border-radius: 0.25rem;
+    border: 1px solid #202225;
+    color: white;
+    white-space: nowrap;
+    opacity: 0.3;
+    z-index: 6;
+    grid-row: 1;
+    -ms-grid-row: 1;
+}
+
+#toggleChatPlayer:hover {
+    opacity: 1;
+}
+
+/* Chat */
+
+#sendButton, #reconnectButton, #emoteButton {
+    color: #fff;
+    background: #0a0a0a;
+    padding: 0.1rem;
+    border-radius: 0.25rem;
+    border: 1px solid #202225;
+}
+
+#chat {
+    -ms-grid-column: 2;
+    display: flex;
+    flex-direction: column;
+    margin: 0.5rem;
+    transform: translateX(0%);
+    transition: transform ease-in-out 0.3s, visibility ease-in-out 0.3s, opacity ease-in-out 0.3s;
+    z-index: 2;
+}
+
+#statusData {
+    display: flex;
+
+    align-items: end;
+    justify-items: center;
+
+    text-align: center;
+
+    justify-content: space-around;
+}
+
+#settings {
+    grid-column: 1;
+    -ms-grid-column: 1;
+}
+
+#settingsPopup {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+
+    display: -ms-grid;
+    -ms-grid-columns: (1fr)[2];
+
+    transform: translateY(3%);
+    overflow-y: scroll;
+
+}
+
+#settingsPopup button {
+    margin: 0.5rem;
+}
+
+#optionsLabel::before {
+    content: ' ';
+    background-image: url('/icons/cog.svg');
+    background-size: 0.75em 0.75em;
+    width: 0.75em;
+    height: 0.75em;
+    display: inline-block;
+    margin-right: 2%;
+}
+
+#optionsLabel {
+    list-style: none;
+    white-space: nowrap;
+}
+
+#optionsLabel::-webkit-details-marker {
+    display: none;
+}
+
+#connectionStatus {
+    grid-column: 2;
+    -ms-grid-column: 2;
+
+    margin: 0;
+}
+
+#viewerCount {
+    grid-column: 3;
+    -ms-grid-column: 3;
+
+    text-align: center;
+    margin: 0;
+
+    white-space: nowrap;
+}
+
+#chatDisplay {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 2rem);
+    overflow: hidden;
+}
+
+#chatbox {
+    margin: 0;
+    list-style: none;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    flex-grow: 1;
+    overflow-y: auto;
+
+    scrollbar-width: thin;
+    scrollbar-color: #303235 #0e0e0e;
+}
+
+#chatbox li:last-child {
+    padding-bottom: 1rem;
+    animation: fadeIn-Messages ease-in-out 0.2s;
+}
+
+@keyframes fadeIn-Messages {
+    0% {
+        opacity: 0;
+        transform: translateY(2%);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#chatbox::-webkit-scrollbar {
+    width: 0.25rem;
+}
+
+#chatbox::-webkit-scrollbar-thumb {
+    background-color: #303235;
+    border-radius: 0.125rem;
+}
+
+#textInput {
+    margin-top: 0.5rem;
+    display: grid;
+
+    grid-template-rows: auto 1fr;
+    grid-template-columns: 1fr minmax(min-content, 3.5rem);
+
+    display: -ms-grid;
+    -ms-grid-rows: 1fr;
+    -ms-grid-columns: 1fr minmax(min-content, 3.5rem);
+
+    position: relative;
+
+    height: 3rem;
+}
+
+#emoteButton {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    margin: 0.2rem 0;
+
+    grid-column: 1;
+    -ms-grid-column: 2;
+
+    grid-row: 1;
+    -ms-grid-row: 1;
+
+    margin-left: auto;
+    margin-right: 0.5rem;
+
+    background: rgba(0,0,0,0.7);
+    z-index: 1;
+}
+
+#messageInput {
+    font-family: inherit;
+    font-size: 0.9375rem;
+    font-weight: 400;
+
+    grid-column: 1;
+    -ms-grid-column: 1;
+
+    grid-row: 1 / span 2;
+    -ms-grid-row-span: 3;
+
+    margin: 0;
+    margin-right: 0.2rem;
+
+    background: #0a0a0a;
+
+    border-radius: 0.25rem;
+    border: 1px solid #202225;
+    color: #fff;
+
+    resize: none;
+    padding: 0.3rem;
+
+	scrollbar-width: thin;
+	scrollbar-color: #303235 #0e0e0e;
+}
+
+
+#messageInput::-webkit-scrollbar {
+    width: 0.25rem;
+}
+
+#messageInput::-webkit-scrollbar-thumb {
+    background-color: #303235;
+    border-radius: 0.125rem;
+}
+
+#messageInput, #sendButton, #chatbox {
+    border: 1px solid #202225;
+}
+
+#sendButton {
+    grid-row: 1 / span 2;
+    -ms-grid-row: 1;
+    -ms-grid-row-span: 3;
+
+    grid-column: 2;
+    -ms-grid-column: 2;
+
+    height: 3rem;
+    max-width: 4rem;
+}
+
+#reconnectButton {
+    margin-top: 0.5rem;
+    grid-row: 1 / span 2;
+    grid-column: 1 / span 2;
+
+    -ms-grid-row: 1;
+    -ms-grid-column: 1;
+    -ms-grid-row-span: 3;
+    -ms-grid-column-span: 3;
+
+    width: 100%;
+    height: 3rem;
+}
+
+#reconnectButton:disabled {
+    opacity: 0.5;
+}
+
+.emojiDeselect {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: transparent;
+    z-index: 2;
+}
+
+emoji-picker {
+    grid-column: 1;
+    -ms-grid-column: 1;
+    position: absolute;
+    /* For some reason "justify-self: right" doesn't work on Chrome. Use right: 1rem instead. */
+    right: 1rem;
+    transform: translateY(-100%);
+    z-index: 5;
+    position: fixed;
+
+    transition: opacity ease-in-out 0.1s;
+}
+
+emoji-picker *:not(.emoji-mart-skin) {
+    background-color: #0a0a0a !important;
+    color: #fff;
+    border-color: #202225 !important;
+}
+
+emoji-picker .emoji-mart-emoji:hover::before, emoji-picker .emoji-mart-emoji:hover {
+    background-color: transparent !important;
+    color: rgba(255,255,255,0.95) !important;
+}
+
+.emoji-mart-skin-swatches {
+    border: none !important;
+}
+
+.emoji-mart-bar:first-child, .emoji-mart-bar:last-child {
+    padding: 0 0.1rem;
+}
+
+.emoji-mart-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #303235 #0e0e0e;
+}
+
+.emoji-mart-scroll::-webkit-scrollbar {
+    width: 0.25rem;
+}
+
+.emoji-mart-scroll::-webkit-scrollbar-thumb {
+    background-color: #303235;
+    border-radius: 0.125rem;
+}
+
+@media screen and (max-width : 47.99rem) {
+    .emoji-mart {
+        width: calc(80vw - 2rem) !important;
+    }
+
+    .emoji-mart-scroll {
+        height: 33vh !important;
+    }
+}
+
+
+@media screen and (min-width : 48rem) and (max-height : 40rem) {
+    .emoji-mart {
+        width: 50vw !important;
+    }
+
+    .emoji-mart-scroll {
+        height: 33vh !important;
+    }
+}
+
+
+
+/* Overriding video.js styling for responsiveness */
+
+.video-js {
+    height: auto !important;
+}
+
+.vjs-control-bar, .vjs-control-bar * {
+    background: #0e0e0e !important;
+}
+
+.video-js .vjs-tech {
+    position: relative;
+    max-height: calc(100vh - 5.5rem);
+    transition: max-height ease-in-out 0.3s;
+}
+
+.streamPlayer-dimensions.vjs-fluid {
+    padding-top: 0 !important;
+}
+
+.video-js.vjs-fluid, .video-js.vjs-16-9, .video-js.vjs-4-3 {
+    height: auto !important;
+}

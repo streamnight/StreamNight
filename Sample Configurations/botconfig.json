@@ -1,0 +1,16 @@
+{
+	"token": "YourBotToken",
+	"guild": YourStreamGuildId,
+	"channel": YourStreamChannelId,
+	"stream_role":  "YourStreamAdminRoleName",
+	
+	"use_server_logo": true,
+	"stream_name": "ChangeMe",
+	"short_server_name": "ChangeMe",
+	
+	"hmac_key": "ChangeMe",
+	"token_key": "ChangeMe",
+	"token_password": "ChangeMe",
+	"api_url": "PublicUrl",
+	"webhook_url": "YourChatWebhook"
+}

@@ -1,0 +1,55 @@
+﻿@using Microsoft.AspNetCore.Hosting
+@using Microsoft.AspNetCore.Mvc.ViewEngines
+@inject IHostingEnvironment Environment
+@inject ICompositeViewEngine Engine
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - StreamNight</title>
+
+    <environment include="Development">
+        <link rel="stylesheet" href="~/lib/pure/pure-min.css" />
+    </environment>
+    <environment exclude="Development">
+        <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css"
+              asp-fallback-href="~/lib/pure/pure-min.css"
+              asp-fallback-test-class="sr-only" asp-fallback-test-property="position" asp-fallback-test-value="absolute" />
+    </environment>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body style="display:flex;height:100vh;">
+    <header>
+        <nav class="pure-menu">
+            <a class="pure-menu-heading" href="~/">StreamNight</a>
+            @{
+                var result = Engine.FindView(ViewContext, "_LoginPartial", isMainPage: false);
+            }
+            @if (result.Success)
+            {
+                await Html.RenderPartialAsync("_LoginPartial");
+            }
+            else
+            {
+                throw new InvalidOperationException("The default Identity UI layout requires a partial view '_LoginPartial' " +
+                    "usually located at '/Pages/_LoginPartial' or at '/Views/Shared/_LoginPartial' to work. Based on your configuration " +
+                    $"we have looked at it in the following locations: {System.Environment.NewLine}{string.Join(System.Environment.NewLine, result.SearchedLocations)}.");
+            }
+        </nav>
+    </header>
+
+    <div style="display:flex;flex-direction:column;width:100%;padding-left:1rem;">
+        <main role="main" style="flex-grow:1;">
+            @RenderBody()
+        </main>
+
+        <footer>
+            &copy; 2019 - StreamNight
+        </footer>
+    </div>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>
+

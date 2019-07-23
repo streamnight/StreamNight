@@ -1,0 +1,3 @@
+Unless the primary contributor to the Master Repository explicitly states in writing to the contrary, files in this documentation folder are licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+
+A summary and link to the full license can be found at https://creativecommons.org/licenses/by-nc-sa/4.0/ (last update: 2019-07-23)

@@ -1,0 +1,51 @@
+﻿@page
+@model ExternalLoginModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Register Account - @Model.StreamName</title>
+
+    <link rel="stylesheet" href="/css/chat/main.css">
+    <link rel="stylesheet" href="/css/chat/profile.css">
+</head>
+<body>
+    <header>
+        <a href="#" class="menu-icon" id="toggle">
+            <img src="/icons/hamburger.svg" alt="Menu Icon" class="menu-toggle" />
+        </a>
+        <a href="/" id="logo-link">
+            <img src="@Model.LogoPath" alt="Logo" id="logo" />
+        </a>
+    </header>
+    <nav id="menu">
+        <ul>
+            <li><a href="/">Profile</a></li>
+            <li><a href="/login">Login</a></li>
+        </ul>
+    </nav>
+    <main>
+        <div id="mobile-head-spacer"></div>
+        <section>
+            <h1>Associate your @Model.LoginProvider account.</h1>
+            <hr />
+
+            <p>
+                You've successfully authenticated with <strong>@Model.LoginProvider</strong>.
+                Click the Register button to finish logging in.
+            </p>
+
+            <form asp-page-handler="Confirmation" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                <button type="submit" class="pure-button pure-button-primary">Register</button>
+            </form>
+        </section>
+    </main>
+    <script src="/js/main.js"></script>
+</body>
+</html>

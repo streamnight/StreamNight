@@ -1,0 +1,17 @@
+﻿@page
+@model IndexModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Profile";
+    ViewData["ActivePage"] = ManageNavPages.Index;
+}
+
+<h4>@ViewData["Title"]</h4>
+<partial name="_StatusMessage" for="StatusMessage" />
+<form id="profile-form" method="post" class="pure-form">
+    <div>
+        <label asp-for="Username">Username: </label>
+        <input asp-for="Username" disabled />
+    </div>
+    <button id="update-profile-button" type="submit" class="pure-button" disabled>Save</button>
+</form>
