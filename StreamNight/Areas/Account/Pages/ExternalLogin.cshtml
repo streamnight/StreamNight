@@ -1,0 +1,29 @@
+﻿@page
+@model ExternalLoginModel
+@{
+    Layout = "_Layout";
+    ViewBag.Title = "Register";
+}
+
+@if (ViewData["ResultMessage"] != null)
+{
+    <div class="alert alert-danger" role="alert" style="margin-left:1rem;padding:1rem 0;">
+        <p>
+            <strong>@ViewData["ResultMessage"]</strong>
+        </p>
+    </div>
+}
+
+    <section>
+        <h1>Associate your @Model.LoginProvider account.</h1>
+        <hr />
+
+        <p>
+            You've successfully authenticated with <strong>@Model.LoginProvider</strong>.
+            Click the Register button to finish logging in.
+        </p>
+
+        <form asp-page-handler="Confirmation" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+            <button type="submit" class="pure-button pure-button-primary">Register</button>
+        </form>
+    </section>

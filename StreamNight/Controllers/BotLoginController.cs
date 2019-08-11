@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using StreamNight.Areas.Identity.Data;
-using StreamNight.Areas.Identity.Pages.Account;
+using StreamNight.Areas.Account.Data;
+using StreamNight.Areas.Account.Pages;
 using StreamNight.SupportLibs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -88,6 +88,7 @@ namespace StreamNight.Controllers
                     // Check if the user should be in the administrator role
                     try
                     {
+                        bool hasStreamRole = false;
                         bool hasAdminRole = false;
                         // Get the user's roles from the Discord bot
                         DSharpPlus.Entities.DiscordMember member = await _discordBot.DiscordClient.GetMemberById(user.DiscordId);
@@ -96,9 +97,25 @@ namespace StreamNight.Controllers
                             // If the user has the stream role
                             if (discordRole.Name == _discordBot.DiscordClient.StreamRole)
                             {
-                                hasAdminRole = true;
-                                break;
+                                hasStreamRole = true;
                             }
+                            if (discordRole.Name == _discordBot.DiscordClient.AdminRole)
+                            {
+                                hasAdminRole = true;
+                            }
+                        }
+
+                        // Check if the user is in the stream role already
+                        bool userInStreamRole = await _userManager.IsInRoleAsync(user, "StreamController");
+                        if (!userInStreamRole && hasStreamRole)
+                        {
+                            // Add the stream role to the user
+                            await _userManager.AddToRoleAsync(user, "StreamController");
+                        }
+                        else if (userInStreamRole && !hasStreamRole)
+                        {
+                            // Remove the stream role from the user
+                            await _userManager.RemoveFromRoleAsync(user, "StreamController");
                         }
 
                         // Check if the user is in the admin role already

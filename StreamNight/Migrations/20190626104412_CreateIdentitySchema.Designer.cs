@@ -18,7 +18,7 @@ namespace StreamNight.Migrations
             modelBuilder
                 .HasAnnotation("ProductVersion", "2.2.4-servicing-10062");
 
-            modelBuilder.Entity("StreamNight.Areas.Identity.Data.StreamNightRole", b =>
+            modelBuilder.Entity("StreamNight.Areas.Account.Data.StreamNightRole", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd();
@@ -41,7 +41,7 @@ namespace StreamNight.Migrations
                     b.ToTable("AspNetRoles");
                 });
 
-            modelBuilder.Entity("StreamNight.Areas.Identity.Data.StreamNightUser", b =>
+            modelBuilder.Entity("StreamNight.Areas.Account.Data.StreamNightUser", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd();
@@ -93,7 +93,7 @@ namespace StreamNight.Migrations
                     b.ToTable("AspNetUsers");
                 });
 
-            modelBuilder.Entity("StreamNight.Areas.Identity.Data.StreamNightUserRole", b =>
+            modelBuilder.Entity("StreamNight.Areas.Account.Data.StreamNightUserRole", b =>
                 {
                     b.Property<string>("UserId");
 
@@ -189,30 +189,30 @@ namespace StreamNight.Migrations
                     b.ToTable("AspNetUserTokens");
                 });
 
-            modelBuilder.Entity("StreamNight.Areas.Identity.Data.StreamNightUserRole", b =>
+            modelBuilder.Entity("StreamNight.Areas.Account.Data.StreamNightUserRole", b =>
                 {
-                    b.HasOne("StreamNight.Areas.Identity.Data.StreamNightRole")
+                    b.HasOne("StreamNight.Areas.Account.Data.StreamNightRole")
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("StreamNight.Areas.Identity.Data.StreamNightRole", "Role")
+                    b.HasOne("StreamNight.Areas.Account.Data.StreamNightRole", "Role")
                         .WithMany("UserRoles")
                         .HasForeignKey("RoleId1");
 
-                    b.HasOne("StreamNight.Areas.Identity.Data.StreamNightUser")
+                    b.HasOne("StreamNight.Areas.Account.Data.StreamNightUser")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("StreamNight.Areas.Identity.Data.StreamNightUser", "User")
+                    b.HasOne("StreamNight.Areas.Account.Data.StreamNightUser", "User")
                         .WithMany("UserRoles")
                         .HasForeignKey("UserId1");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
-                    b.HasOne("StreamNight.Areas.Identity.Data.StreamNightRole")
+                    b.HasOne("StreamNight.Areas.Account.Data.StreamNightRole")
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -220,7 +220,7 @@ namespace StreamNight.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("StreamNight.Areas.Identity.Data.StreamNightUser")
+                    b.HasOne("StreamNight.Areas.Account.Data.StreamNightUser")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -228,7 +228,7 @@ namespace StreamNight.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("StreamNight.Areas.Identity.Data.StreamNightUser")
+                    b.HasOne("StreamNight.Areas.Account.Data.StreamNightUser")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -236,7 +236,7 @@ namespace StreamNight.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("StreamNight.Areas.Identity.Data.StreamNightUser")
+                    b.HasOne("StreamNight.Areas.Account.Data.StreamNightUser")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade);

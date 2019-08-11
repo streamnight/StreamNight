@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using StreamNight.Areas.Account.Pages;
 
 namespace StreamNight.Pages
 {
@@ -88,7 +89,7 @@ namespace StreamNight.Pages
             }
             else
             {
-                return Redirect("/profile");
+                return Redirect("/Account/");
             }
         }
     }

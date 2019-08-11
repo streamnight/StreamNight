@@ -1,0 +1,71 @@
+﻿@page
+@model StreamNight.Areas.Admin.Pages.ConfigModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@addTagHelper *, AuthoringTagHelpers
+@{
+    Layout = "_Layout";
+    ViewBag.Title = "Streambot Configuration";
+}
+
+<section>
+    @if (ViewData["ResultMessage"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            <p>
+                <strong>@ViewData["ResultMessage"]</strong>
+            </p>
+        </div>
+    }
+
+    <h1>Streambot Configuration</h1>
+    <p>This page contains the configuration for the Discord bot. ASP.NET options (including the OAuth token) will need to be set from the server.</p>
+</section>
+<section id="configuration-data">
+    <form asp-action="OnPostAsync" method="post">
+        @foreach (KeyValuePair<string, object> keyValuePair in Model.ConfigProperties)
+        {
+            if (keyValuePair.Value is string || keyValuePair.Value is ulong)
+            {
+                <label for="NewConfig.@keyValuePair.Key">@keyValuePair.Key: </label>
+                <input id="@keyValuePair.Key" type="text" name="NewConfig.@keyValuePair.Key" value="@keyValuePair.Value" />
+            }
+            else if (keyValuePair.Value is bool)
+            {
+                <label for="NewConfig.@keyValuePair.Key">@keyValuePair.Key: </label>
+                <div class="checkbox">
+                    <input id="@keyValuePair.Key" type="checkbox" value="true" name="NewConfig.@keyValuePair.Key" />
+                    <input id="@keyValuePair.Key-hidden"type="hidden" value="false" name="NewConfig.@keyValuePair.Key" />
+                </div>
+            }
+        }
+        <!-- -->
+        <input type="button" id="checkWebhook" value="Check Webhook" style="width:calc(100% - 1rem);" />
+        <input type="submit" style="grid-column:2;-ms-grid-column:2;color:cornflowerblue;" value="Update Configuration" />
+    </form>
+
+    <script>
+        var webhookXhr;
+        function checkWebhook() {
+            console.log("Checking webhook.");
+            webhookXhr = new XMLHttpRequest();
+            webhookXhr.open('POST', '/Admin/WebhookChecker', true);
+            webhookXhr.setRequestHeader("Content-Type", "application/json");
+            webhookXhr.onload = function () {
+                if (webhookXhr.response == document.getElementById('ChannelId').value) {
+                    alert("Webhook channel matches channel ID.");
+                }
+                else {
+                    console.log(webhookXhr.response);
+                    alert("Webhook channel does not match channel ID. Please check the values and try again.");
+                }
+            };
+            try {
+                webhookXhr.send('"' + document.getElementById('WebhookUrl').value + '"');
+            }
+            catch {
+                alert("Couldn't check the webhook. Make sure the URL is correct and try again.");
+            }
+        }
+        document.getElementById('checkWebhook').addEventListener('click', checkWebhook);
+    </script>
+</section>

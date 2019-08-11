@@ -1,15 +1,18 @@
 ﻿@using Microsoft.AspNetCore.Identity
-@using StreamNight.Areas.Identity.Data
+@using StreamNight.Areas.Account.Data
 @inject SignInManager<StreamNightUser> SignInManager
 
-@if (User.Identity.IsAuthenticated && await SignInManager.UserManager.IsInRoleAsync(await SignInManager.UserManager.FindByNameAsync(User.Identity.Name), "Administrator"))
+@if (User.Identity.IsAuthenticated && (User.IsInRole("StreamController") || User.IsInRole("Administrator")))
 {
     <p class="optionsLabel">Admin Options</p>
-    <button onclick="connection.invoke('adminStreamUp')" style="background:#307235">Set stream up</button>
-    <button onclick="connection.invoke('adminStreamDown')" style="background:#307235">Set stream down</button>
-    <button onclick="connection.invoke('adminSendHeartbeatRequest')" style="background:#703235">Get heartbeat</button>
-    <button onclick="connection.invoke('adminForceDisconnect')" style="background:#A03235">Disconnect all</button>
-    <button onclick="connection.invoke('adminForceRefresh')" style="background:#F03235;grid-column:1/span 2;">Remote refresh all</button>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);display:-ms-grid;-ms-grid-columns:(1fr)[2];grid-column:1 / span 2;">
+        <button onclick="connection.invoke('adminStreamUp')" style="background:#307235;-ms-grid-column:1;">Set stream up</button>
+        <button onclick="connection.invoke('adminStreamDown')" style="background:#307235;-ms-grid-column:2;">Set stream down</button>
+        <button onclick="connection.invoke('adminSendHeartbeatRequest')" style="background:#703235;-ms-grid-column:1;-ms-grid-row:2;">Get heartbeat</button>
+        <button onclick="connection.invoke('adminForceDisconnect')" style="background:#A03235;-ms-grid-column:2;-ms-grid-row:2;">Disconnect all</button>
+        <button onclick="connection.invoke('adminForceRefresh')" style="background:#F03235;-ms-grid-column:1;-ms-grid-row:3;">Remote refresh all</button>
+        <button onclick="window.location.href=window.location.protocol+'//'+window.location.host+'/Admin/'" style="-ms-grid-column:2;-ms-grid-row:3;">Bot control panel</button>
+    </div>
 }
 else
 {

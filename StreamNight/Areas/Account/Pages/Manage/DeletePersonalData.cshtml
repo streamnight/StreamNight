@@ -1,0 +1,29 @@
+﻿@page
+@model DeletePersonalDataModel
+@{
+    Layout = "_Layout";
+    ViewBag.Title = "Delete Personal Data";
+}
+
+<section>
+    <h1>@ViewBag.Title</h1>
+    <div class="alert alert-danger" role="alert">
+        <p>
+            <span style="font-size:xx-large;vertical-align:middle;margin-top:-0.125em;">&#9888;</span>
+            <strong>Deleting this data will permanently remove your account.</strong>
+        </p>
+    </div>
+    <div>
+        <form id="delete-user" method="post" class="pure-form">
+            @if (Model.RequirePassword)
+            {
+                <div class="pure-control-group">
+                    <label asp-for="Input.Password"></label>
+                    <input asp-for="Input.Password" />
+                </div>
+            }
+            <button class="data-button" type="submit" style="background:rgb(202, 60, 60);">Delete data and close my account</button>
+        </form>
+    </div>
+</section>
+

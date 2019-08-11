@@ -2,7 +2,8 @@
 	"token": "YourBotToken",
 	"guild": YourStreamGuildId,
 	"channel": YourStreamChannelId,
-	"stream_role":  "YourStreamAdminRoleName",
+	"stream_role":  "YourStreamControlRoleName",
+	"admin_role":  "YourAdminRoleName",
 	
 	"use_server_logo": true,
 	"stream_name": "ChangeMe",

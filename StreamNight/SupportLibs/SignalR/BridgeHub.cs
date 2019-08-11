@@ -28,6 +28,11 @@ namespace StreamNight.SupportLibs.SignalR
         // DiscordMessageController.cs
         public async Task SendMessage(SendMessage message)
         {
+            if (!_discordBot.DiscordClient.Ready)
+            {
+                await this.Clients.Caller.SendAsync("BridgeDown");
+            }
+
             NewMessage newMessage = new NewMessage(RemoveMassPings(message.Content));
             HubUser hubUser = UserHandler.UserMappings[this.Context.ConnectionId];
 
@@ -158,7 +163,7 @@ namespace StreamNight.SupportLibs.SignalR
 
         public async Task AdminStreamUp()
         {
-            if (this.Context.User.IsInRole("Administrator"))
+            if (this.Context.User.IsInRole("StreamController") || this.Context.User.IsInRole("Administrator"))
             {
                 this._discordBot.DiscordClient.StreamUp = true;
                 await this.Clients.All.SendAsync("StreamUp");
@@ -171,7 +176,7 @@ namespace StreamNight.SupportLibs.SignalR
 
         public async Task AdminStreamDown()
         {
-            if (this.Context.User.IsInRole("Administrator"))
+            if (this.Context.User.IsInRole("StreamController") || this.Context.User.IsInRole("Administrator"))
             {
                 this._discordBot.DiscordClient.StreamUp = false;
             }
@@ -183,7 +188,7 @@ namespace StreamNight.SupportLibs.SignalR
 
         public async Task AdminForceDisconnect()
         {
-            if (this.Context.User.IsInRole("Administrator"))
+            if (this.Context.User.IsInRole("StreamController") || this.Context.User.IsInRole("Administrator"))
             {
                 UserHandler.ConnectedIds.Clear();
                 UserHandler.UserMappings.Clear();
@@ -197,7 +202,7 @@ namespace StreamNight.SupportLibs.SignalR
 
         public async Task AdminForceRefresh()
         {
-            if (this.Context.User.IsInRole("Administrator"))
+            if (this.Context.User.IsInRole("StreamController") || this.Context.User.IsInRole("Administrator"))
             {
                 UserHandler.ConnectedIds.Clear();
                 UserHandler.UserMappings.Clear();
@@ -211,7 +216,7 @@ namespace StreamNight.SupportLibs.SignalR
 
         public async Task AdminSendHeartbeatRequest()
         {
-            if (this.Context.User.IsInRole("Administrator"))
+            if (this.Context.User.IsInRole("StreamController") || this.Context.User.IsInRole("Administrator"))
             {
                 await this.Clients.All.SendAsync("RequestHeartbeat");
                 _ = Task.Run(async () =>
@@ -225,10 +230,16 @@ namespace StreamNight.SupportLibs.SignalR
                           // If the last heartbeat time was more than 15s ago, should give some headroom with the 10s delay
                           if (heartbeatTime - userMapping.Value.LastHeartbeatTime > 15)
                           {
-                              await this.Clients.Client(userMapping.Key).SendAsync("ForceDisconnect");
-                              UserHandler.ConnectedIds.Remove(userMapping.Key);
-                              UserHandler.UserMappings.Remove(userMapping.Key);
-                              await this.Clients.Others.SendAsync("ViewerDisconnected");
+                              try
+                              {
+                                  await this.Clients.Client(userMapping.Key).SendAsync("ForceDisconnect");
+                              }
+                              finally
+                              {
+                                  UserHandler.ConnectedIds.Remove(userMapping.Key);
+                                  UserHandler.UserMappings.Remove(userMapping.Key);
+                                  await this.Clients.Others.SendAsync("ViewerDisconnected");
+                              }
                           }
                       }
                   });

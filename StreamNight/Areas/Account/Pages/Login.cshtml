@@ -1,0 +1,43 @@
+﻿@page
+@model LoginModel
+@{
+    Layout = "_Layout";
+    ViewBag.Title = "Login";
+}
+
+<section>
+    @if (User.Identity.IsAuthenticated)
+    {
+        Redirect("/");
+    }
+    else
+    {
+        <section>
+            <h1>Sign in with Discord.</h1>
+            <hr />
+            @{
+                if ((Model.ExternalLogins?.Count ?? 0) == 0)
+                {
+                    <p>
+                        There are no external authentication services configured. Try DMing <code>streambot!login</code> to <strong>@Model.BotName</strong> from your account in the stream guild.
+                    </p>
+                }
+                else
+                {
+                    <h2>Log in with Discord's OAuth (account authorisation)</h2>
+                    <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="pure-form">
+                        <p>
+                            @foreach (var provider in Model.ExternalLogins)
+                            {
+                                <button class="data-button" type="submit" name="provider" value="@provider.Name" style="background-color:#7289da;">Log in with @provider.DisplayName</button>
+                            }
+                        </p>
+                    </form>
+
+                    <h2>Sign in with a DM</h2>
+                    <p>DM <code>streambot!login</code> to <strong>@Model.BotName</strong> from your account in the stream guild.</p>
+                }
+            }
+        </section>
+    }
+</section>

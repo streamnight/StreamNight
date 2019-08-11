@@ -51,6 +51,12 @@ namespace StreamNight.SupportLibs
             }
         }
 
+        private MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
+                                                        .UseEmojiAndSmiley()
+                                                        .UseEmphasisExtras()
+                                                        .UseAutoLinks()
+                                                        .Build();
+
         private void Humanise()
         {
             DiscordMessage message = this.OriginalMessage;
@@ -141,7 +147,7 @@ namespace StreamNight.SupportLibs
                 {
                     if (attachment.Height != 0 && !attachment.FileName.EndsWith("mp4") && !attachment.FileName.EndsWith("webm"))
                     {
-                        humanised = $"<img class=\"discordAttachment\" src=\"{attachment.Url}\" alt=\"Message attachment\" height=\"{attachment.Height}\" width=\"{attachment.Width}\"> <br> {humanised}";
+                        humanised = humanised.Insert(0, $"<img class=\"discordAttachment\" src=\"{attachment.Url}\" alt=\"Message attachment\" height=\"{attachment.Height}\" width=\"{attachment.Width}\"> <br>");
                     }
                     else
                     {
@@ -150,8 +156,17 @@ namespace StreamNight.SupportLibs
                 }
             }
 
+            if (message.Embeds.Count > 0)
+            {
+                if (!string.IsNullOrWhiteSpace(humanised))
+                {
+                    humanised = $"{humanised} <br> ";
+                }
+                humanised = humanised + ConvertEmbeds(message);
+            }
+
             // Parse Markdown text
-            humanised = Markdown.ToHtml(humanised);
+            humanised = Markdown.ToHtml(humanised, MarkdownPipeline);
 
             this._HumanText = humanised;
         }
@@ -169,6 +184,132 @@ namespace StreamNight.SupportLibs
             output = output.Replace("'", "&#39;");
 
             return output;
+        }
+
+        private string ConvertEmbeds(DiscordMessage inputMessage)
+        {
+            // TODO: Maybe consider looking into HtmlTags instead of manually writing HTML?
+            List<string> embedHTML = new List<string>();
+
+            foreach (DiscordEmbed embed in inputMessage.Embeds)
+            {
+                if (embed.Color.HasValue)
+                {
+                    // Embed root with colour
+                    embedHTML.Add($"<div class=\"embed\" style=\"border-left-color:{embed.Color.Value.ToString()}\">");
+                }
+                else
+                {
+                    // Embed root without colour
+                    embedHTML.Add($"<div class=\"embed\">");
+                }
+
+                if (embed.Author != null)
+                {
+                    // Embed author element
+                    embedHTML.Add("<div class=\"embed-author\">");
+                    if (embed.Author.IconUrl != null)
+                    {
+                        // Embed author image (self-closing)
+                        embedHTML.Add($"<img alt=\"Embed author\" src=\"{embed.Author.IconUrl}\">");
+                    }
+                    if (embed.Author.Name != null)
+                    {
+                        // Embed author name (self-closing)
+                        embedHTML.Add($"<span>{SanitiseHtml(embed.Author.Name)}</span>");
+                    }
+                    // Closes embed author element
+                    embedHTML.Add("</div>");
+                }
+
+                if (!string.IsNullOrEmpty(embed.Title))
+                {
+                    // Embed title (self-closing)
+                    embedHTML.Add($"<div class=\"embed-title\">{SanitiseHtml(embed.Title)}</div>");
+                }
+
+                if (!string.IsNullOrEmpty(embed.Description))
+                {
+                    // Embed description (self-closing)
+                    embedHTML.Add($"<div class=\"embed-description\">\n\n{SanitiseHtml(embed.Description)}</div>");
+                }
+
+                if (embed.Fields != null)
+                {
+                    // Embed fields element
+                    embedHTML.Add("<div class=\"embed-fields\">");
+                    foreach (DiscordEmbedField embedField in embed.Fields)
+                    {
+                        if (embedField.Inline)
+                        {
+                            // Inline embed field
+                            embedHTML.Add("<div class=\"embed-field embed-field-inline\">");
+                        }
+                        else
+                        {
+                            // Embed field
+                            embedHTML.Add("<div class=\"embed-field\">");
+                        }
+
+                        if (!string.IsNullOrEmpty(embedField.Name))
+                        {
+                            // Embed field name (self-closing)
+                            embedHTML.Add($"<div class=\"embed-field-name\">{SanitiseHtml(embedField.Name)}</div>");
+                        }
+                        if (!string.IsNullOrEmpty(embedField.Value))
+                        {
+                            // Embed field value (self-closing)
+                            embedHTML.Add($"<div class=\"embed-field-value\">\n\n{SanitiseHtml(embedField.Value)}</div>");
+                        }
+                        // Closes embed field
+                        embedHTML.Add("</div>");
+                    }
+                    // Closes embed fields
+                    embedHTML.Add("</div>");
+                }
+
+                if (embed.Footer != null || embed.Timestamp.HasValue)
+                {
+                    // Embed footer element
+                    embedHTML.Add("<div class=\"embed-footer\">");
+
+                    if (embed.Footer != null)
+                    {
+                        if (embed.Footer.IconUrl != null)
+                        {
+                            embedHTML.Add($"<img src=\"{embed.Footer.IconUrl.ToString()}\">");
+                        }
+
+                        if (!string.IsNullOrEmpty(embed.Footer.Text))
+                        {
+                            embedHTML.Add($"<span>{SanitiseHtml(embed.Footer.Text)}</span>");
+                        }
+                    }
+
+                    if (embed.Timestamp.HasValue)
+                    {
+                        System.Globalization.DateTimeFormatInfo formatInfo = new System.Globalization.DateTimeFormatInfo();
+                        formatInfo.LongDatePattern = "yyyy-MM-ddTHH:mm:sszzz";
+                        embedHTML.Add($"<time class=\"timestamp\" datetime=\"{embed.Timestamp.Value.ToString(formatInfo.LongDatePattern)}\"></time>");
+                    }
+                    // Closes embed footer
+                    embedHTML.Add("</div>");
+                }
+
+                if (embed.Image != null)
+                {
+                    embedHTML.Add($"<img src=\"{embed.Image.Url}\">");
+                }
+                if (embed.Thumbnail != null)
+                {
+                    embedHTML.Add($"<img src=\"{embed.Thumbnail.Url}\">");
+                }
+
+                // Closes embed root
+                embedHTML.Add("</div>");
+            }
+
+            return string.Join("\n", embedHTML);
         }
 
         public class RemoteEmote

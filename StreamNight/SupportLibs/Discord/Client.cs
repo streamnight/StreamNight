@@ -13,42 +13,83 @@ using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Threading;
+using StreamNight.SupportLibs.Status;
 
 namespace StreamNight.SupportLibs.Discord
 {
     public class Client
     {
+        private CancellationTokenSource stopClientTokenSource;
+
+        internal BotConfig botConfig;
         private DiscordClient discordClient;
         private DiscordWebhookClient webhookClient;
+        /// <summary>
+        /// The message storage location that is used to send historical messages to connecting clients.
+        /// </summary>
         public IHistoryStore historyStore;
+
+        // Putting this here to mimic singleton behaviour.
+        /// <summary>
+        /// The SystemStatus object tracking this client. Null until the status page is accessed.
+        /// </summary>
+        public SystemStatus SystemStatus = null;
 
         internal MessageHandler messageHandler;
 
+        /// <summary>
+        /// Signals whether the stream is up.
+        /// </summary>
         public bool StreamUp = false;
+        /// <summary>
+        /// Signals whether the Discord client is running.
+        /// </summary>
+        public bool Running = false;
+        /// <summary>
+        /// Signals whether the Discord client has successfully connected to the guild.
+        /// </summary>
         public bool Ready = false;
-        private bool UseServerLogo = false;
+        /// <summary>
+        /// Signals whether the webhook's channel matches the channel ID set in the config.
+        /// </summary>
+        public bool WebhookChannelMatch = false;
+        public bool UseServerLogo = false;
         private ulong GuildId = 0;
         private ulong ChannelId = 0;
         private string ClientName;
 
         private string ShortServerName;
 
-        // Putting this here because I'm lazy, it's accessed by the ASP.NET pages to generate the titles
+        /// <summary>
+        /// The string used to generate the ASP.NET page titles.
+        /// </summary>
         public string StreamName;
+        /// <summary>
+        /// The stream channel's Discord name.
+        /// </summary>
         public string StreamChannelName;
 
         public string StreamRole;
+        public string AdminRole;
 
         public string LogoWebPath
         {
             get
             {
-                if (this.Ready && this.UseServerLogo && (DateTime.UtcNow - LastLogoRefresh).TotalMinutes > 60.0)
+                if (this.UseServerLogo)
                 {
-                    _ = this.DownloadGuildLogo();
-                    LastLogoRefresh = DateTimeOffset.UtcNow;
+                    if (this.Ready && (DateTime.UtcNow - LastLogoRefresh).TotalMinutes > 60.0)
+                    {
+                        _ = this.DownloadGuildLogo();
+                        LastLogoRefresh = DateTimeOffset.UtcNow;
+                    }
+                    return _LogoWebPath;
                 }
-                return _LogoWebPath;
+                else
+                {
+                    return "/images/staticlogo.png";
+                }
             }
         }
         private string _LogoWebPath = "/images/staticlogo.png";
@@ -59,26 +100,34 @@ namespace StreamNight.SupportLibs.Discord
             this.historyStore = historyStore;
         }
 
+        /// <summary>
+        /// Initialises and starts the Discord bot.
+        /// </summary>
+        /// <returns>The task representing the bot's execution status.</returns>
         public async Task RunBotAsync()
         {
+            this.Running = true;
+            stopClientTokenSource = new CancellationTokenSource();
+
             var json = "";
             using (var fs = File.OpenRead("botconfig.json"))
             using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                 json = await sr.ReadToEndAsync();
 
-            var cfgjson = JsonConvert.DeserializeObject<Config>(json);
+            this.botConfig = JsonConvert.DeserializeObject<BotConfig>(json);
 
-            this.UseServerLogo = cfgjson.UseServerLogo;
-            this.StreamRole = cfgjson.StreamRole;
-            this.StreamName = cfgjson.StreamName;
-            if (!string.IsNullOrEmpty(cfgjson.ShortServerName))
+            this.UseServerLogo = this.botConfig.UseServerLogo;
+            this.StreamRole = this.botConfig.StreamRole;
+            this.AdminRole = this.botConfig.AdminRole;
+            this.StreamName = this.botConfig.StreamName;
+            if (!string.IsNullOrEmpty(this.botConfig.ShortServerName))
             {
-                ShortServerName = cfgjson.ShortServerName;
+                ShortServerName = this.botConfig.ShortServerName;
             }
 
             var cfg = new DiscordConfiguration
             {
-                Token = cfgjson.Token,
+                Token = this.botConfig.Token,
                 TokenType = TokenType.Bot,
 
                 AutoReconnect = true,
@@ -88,26 +137,29 @@ namespace StreamNight.SupportLibs.Discord
 
             messageHandler = new MessageHandler(new MessageHandlerConfig
             {
-                ApiUrl = cfgjson.ApiUrl,
-                ChannelId = cfgjson.ChannelId,
-                HmacKey = cfgjson.HmacKey,
+                ApiUrl = this.botConfig.ApiUrl,
+                ChannelId = this.botConfig.ChannelId,
+                HmacKey = this.botConfig.HmacKey,
                 // Login token generator
-                TokenKey = cfgjson.TokenKey,
-                TokenPassword = cfgjson.TokenPassword,
-                StreamRole = cfgjson.StreamRole,
+                TokenKey = this.botConfig.TokenKey,
+                TokenPassword = this.botConfig.TokenPassword,
+                StreamRole = this.botConfig.StreamRole,
                 // Reference to this
                 Client = this
             });
 
-            Uri.TryCreate(cfgjson.WebhookUrl, UriKind.Absolute, out Uri WebhookUri);
-            GuildId = cfgjson.GuildId;
-            ChannelId = cfgjson.ChannelId;
+            Uri.TryCreate(this.botConfig.WebhookUrl, UriKind.Absolute, out Uri WebhookUri);
+            GuildId = this.botConfig.GuildId;
+            ChannelId = this.botConfig.ChannelId;
 
             this.discordClient = new DiscordClient(cfg);
 
             this.discordClient.Ready += this.Client_Ready;
             this.discordClient.GuildAvailable += this.Client_GuildAvailable;
+            this.discordClient.GuildUnavailable += this.Client_GuildUnavailable;
             this.discordClient.ClientErrored += this.Client_ClientError;
+
+            this.discordClient.ChannelUpdated += this.Client_ChannelUpdated;
 
             this.discordClient.MessageCreated += messageHandler.Created;
             this.discordClient.MessageUpdated += messageHandler.Edited;
@@ -117,8 +169,29 @@ namespace StreamNight.SupportLibs.Discord
             webhookClient = new DiscordWebhookClient();
             await webhookClient.AddWebhookAsync(WebhookUri);
 
+            foreach (DiscordWebhook webhook in webhookClient.Webhooks)
+            {
+                if (webhook.ChannelId == botConfig.ChannelId)
+                {
+                    WebhookChannelMatch = true;
+                }
+            }
+
             await this.discordClient.ConnectAsync();
-            await Task.Delay(-1);
+            try
+            {
+                await Task.Delay(-1, stopClientTokenSource.Token);
+            }
+            finally
+            {
+                // Cancellation requested or the client crashed, perform cleanup.
+                this.Ready = false;
+
+                await this.discordClient.DisconnectAsync();
+                this.discordClient.Dispose();
+                this.Running = false;
+                stopClientTokenSource.Dispose();
+            }
         }
 
         private Task Client_Ready(ReadyEventArgs e)
@@ -142,12 +215,58 @@ namespace StreamNight.SupportLibs.Discord
             return Task.CompletedTask;
         }
 
+        private Task Client_GuildUnavailable(GuildDeleteEventArgs e)
+        {
+            e.Client.DebugLogger.LogMessage(LogLevel.Warning, "WebChat", $"Guild not available: {e.Guild.Name}", DateTime.Now);
+
+            if (e.Guild.Id == this.GuildId)
+            {
+                this.Ready = false;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Logs an error to the console.
+        /// </summary>
+        /// <param name="e">The event holding the error.</param>
+        /// <returns>The task representing the method's execution state.</returns>
         private Task Client_ClientError(ClientErrorEventArgs e)
         {
             e.Client.DebugLogger.LogMessage(LogLevel.Error, "WebChat", $"Exception occured: {e.Exception.GetType()}: {e.Exception.Message}", DateTime.Now);
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Processes a channel update and changes the displayed stream channel name if appropriate.
+        /// </summary>
+        /// <param name="e">The ChannelUpdateEventArgs event.</param>
+        /// <returns>The task representing the method's execution state.</returns>
+        private Task Client_ChannelUpdated(ChannelUpdateEventArgs e)
+        {
+            if (e.ChannelAfter.Id == this.ChannelId)
+            {
+                this.StreamChannelName = e.ChannelAfter.Name;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Attempts to stop the bot.
+        /// </summary>
+        public void StopBot()
+        {
+            stopClientTokenSource.Cancel();
+        }
+
+        /// <summary>
+        /// Fire this after receiving a message from the web bridge.
+        /// Current actions supported: Send, Delete
+        /// </summary>
+        /// <param name="message">The message coming from the SignalR hub.</param>
+        /// <returns>The task representing the message's processing status.</returns>
         public async Task IngestSignalR(BridgeMessage message)
         {
             if (!Ready)
@@ -173,6 +292,10 @@ namespace StreamNight.SupportLibs.Discord
                         if (emote.Id == 0)
                         {
                             translatedContent = translatedContent.Replace(colonEmote.Value, emote.Name);
+                        }
+                        else if (emote.IsAnimated)
+                        {
+                            translatedContent = translatedContent.Replace(colonEmote.Value, $"<a:{emote.Name}:{emote.Id}>");
                         }
                         else if (!emote.IsAnimated)
                         {
@@ -230,7 +353,12 @@ namespace StreamNight.SupportLibs.Discord
         /// <exception cref="NullReferenceException">Thrown if the member doesn't exist.</exception>
         public async Task<DiscordMember> GetMemberById(ulong id)
         {
-            DiscordMember member = (await (await this.discordClient.GetChannelAsync(ChannelId)).Guild.GetMemberAsync(id));
+            DiscordMember member = null;
+            try
+            {
+                member = await (await this.discordClient.GetChannelAsync(ChannelId)).Guild.GetMemberAsync(id);
+            }
+            catch (DSharpPlus.Exceptions.NotFoundException) { /* Handled in null check below */ }
             if (member == null)
             {
                 throw new NullReferenceException("Member does not exist.");
@@ -265,15 +393,10 @@ namespace StreamNight.SupportLibs.Discord
 
             foreach (DiscordEmoji emote in emotes)
             {
-                if (emote.IsAnimated)
-                {
-                    continue;
-                }
-
                 Emoji emoji = new Emoji
                 {
                     // Hack to somehow get Discord mention string in the emote data
-                    emoticons = new string[] { $"<:{emote.Name}:{emote.Id}>" },
+                    emoticons = new string[] { $":{emote.Name}:" },
                     name = $"{ShortServerName}_{emote.Name}",
                     colons = $"{ShortServerName}_{emote.Name}",
                     short_names = new string[] { $"{ShortServerName}_" + emote.Name },
@@ -286,6 +409,10 @@ namespace StreamNight.SupportLibs.Discord
             return JsonConvert.SerializeObject(EmojiMartEmoji);
         }
 
+        /// <summary>
+        /// Get the Discord username and discriminator of the current bot.
+        /// </summary>
+        /// <returns>The bot's username and discriminator, separated by a hash.</returns>
         public string GetClientUsername()
         {
             if (string.IsNullOrEmpty(ClientName))
@@ -296,6 +423,10 @@ namespace StreamNight.SupportLibs.Discord
             return ClientName;
         }
 
+        /// <summary>
+        /// Download the stream guild's logo and save it in the images folder.
+        /// </summary>
+        /// <returns>The task representing the download's state.</returns>
         public async Task DownloadGuildLogo()
         {
             if (!UseServerLogo)
@@ -305,7 +436,7 @@ namespace StreamNight.SupportLibs.Discord
             bool logoDownloadSuccess = false;
             HttpClient httpClient = new HttpClient();
             DiscordChannel chatChannel = await this.discordClient.GetChannelAsync(this.ChannelId);
-            _LogoWebPath = $"images/logo.{chatChannel.Guild.IconUrl.Split('.').Last()}";
+            _LogoWebPath = $"/images/logo.{chatChannel.Guild.IconUrl.Split('.').Last()}";
             string LogoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", _LogoWebPath.Replace('/', Path.DirectorySeparatorChar));
             int i = 0;
             do

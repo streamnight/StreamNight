@@ -1,0 +1,16 @@
+﻿@page
+@model PersonalDataModel
+@{
+    Layout = "_Layout";
+    ViewBag.Title = "Personal Data";
+}
+
+    <section>
+        <h4>@ViewBag.Title</h4>
+        <div>
+            <p>Your account contains personal data that you have given us. This page allows you to download or delete that data.</p>
+
+            <a asp-page="DownloadPersonalData" class="data-button" style="background-color: rgb(0, 120, 231);">Download</a>
+            <a asp-page="DeletePersonalData" class="data-button" style="background:rgb(202, 60, 60);">Delete</a>
+        </div>
+    </section>

@@ -1,6 +1,7 @@
 ﻿"use strict";
 
 var connectionStatus = document.getElementById("connectionStatus");
+var timeagoNodes;
 
 function registerTap(object, event) {
     object.addEventListener("touchstart", function () {
@@ -69,7 +70,7 @@ function connect() {
     }, function (err) {
         console.error(err);
         timeouts = timeouts + 1;
-        setTimeout(connect, 1000);
+        setTimeout(connect, 3000);
     });
 };
 
@@ -80,6 +81,7 @@ connection.serverTimeoutInMilliseconds = 10000;
 document.getElementById("sendButton").disabled = true;
 
 var createMessage = function (NewMessage) {
+    timeago.cancel();
     var chatbox = document.getElementById("chatbox");
 
     var li = document.createElement("li");
@@ -96,6 +98,13 @@ var createMessage = function (NewMessage) {
 
     var h4 = document.createElement("h4");
     h4.textContent = NewMessage.author;
+
+    var timestamp = document.createElement("time");
+    var date = new Date(NewMessage.timestamp * 1000);
+    timestamp.setAttribute("datetime", date.toUTCString());
+    timestamp.classList.add("timestamp");
+    h4.appendChild(timestamp);
+
     messageDiv.appendChild(h4);
 
     var contentDiv = document.createElement("div");
@@ -118,6 +127,9 @@ var createMessage = function (NewMessage) {
     if (userInArray > -1) {
         typingUsersDisplayed.splice(userInArray, 1);
     }
+
+    timeagoNodes = document.getElementsByClassName("timestamp");
+    timeago.render(timeagoNodes);
 }
 
 connection.on("NewMessage", createMessage);
@@ -129,12 +141,14 @@ connection.on("DeleteMessage", function (DeleteMessage) {
 connection.on("EditMessage", function (EditMessage) {
     var elementToEdit = document.getElementById(EditMessage.messageId).childNodes[2];
     elementToEdit.innerHTML = twemoji.parse(EditMessage.content);
-    elementToEdit.childNodes[0].setAttribute("style", "margin:0;");
     var elementImgs = Array.from(elementToEdit.getElementsByTagName("img"));
 
     elementImgs.forEach(function (element) {
         element.setAttribute("style", "height:2rem;margin:0;");
     });
+
+    timeagoNodes = document.getElementsByClassName("timestamp");
+    timeago.render(timeagoNodes);
 });
 
 connection.on("MessageHistory", function (MessageHistory) {
@@ -164,6 +178,10 @@ connection.on("requestHeartbeat", function () {
 
 connection.on("unauthorised", function () {
     console.error("Unauthorised.");
+});
+
+connection.on("BridgeDown", function () {
+    alert("Sorry, chat isn't working at the moment. Contact the stream administrator for more details.");
 });
 
 var sendClick = function (event) {

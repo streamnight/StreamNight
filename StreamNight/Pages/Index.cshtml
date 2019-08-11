@@ -16,15 +16,15 @@
     <link href="https://vjs.zencdn.net/7.5.5/video-js.css" rel="stylesheet">
 
     <link rel="stylesheet" href="https://unpkg.com/emoji-mart@2.11.1/css/emoji-mart.css" />
-    <link rel="stylesheet" href="/css/chat/chat.css" />
-    <link rel="stylesheet" href="/css/stream.css" />
+    <link rel="stylesheet" href="~/css/chat.css" />
+    <link rel="stylesheet" href="~/css/stream.css" />
 </head>
 <body>
     <div class="hidden emojiDeselect"></div>
     <article id="video">
         <div id="streamContainer">
-            <img id="offlineNotice" class="stream-status stream-child" src="/images/poster-offline.png" alt="Offline Poster" />
-            <img id="onlineNotice" class="stream-status hidden stream-child" src="/images/poster-online.png" alt="Online Poster" />
+            <img id="offlineNotice" class="stream-status stream-child" src="~/images/poster-offline.png" alt="Offline Poster" />
+            <img id="onlineNotice" class="stream-status hidden stream-child" src="~/images/poster-online.png" alt="Online Poster" />
             <video id="streamPlayer" controls class="video-js vjs-default-skin vjs-fluid stream-child hidden"></video>
         </div>
 
@@ -48,7 +48,7 @@
                     </div>
                     <p class="optionsLabel">Profile Options</p>
                     <div id="profile-options">
-                        <button id="navProfile" name="Go to profile" onclick="window.location.href=window.location.protocol + '//' + window.location.host + '/profile';">Go to profile</button>
+                        <button id="navProfile" name="Go to profile" onclick="window.location.href=window.location.protocol + '//' + window.location.host + '/Account/';">Go to profile</button>
                     </div>
                     <partial name="_StreamAdminPartial" />
                 </div>
@@ -71,16 +71,16 @@
                     </svg>
                     <!-- Icon by Google from Flaticon, ID send-button_60525-->
                 </button>
-                <script src="/js/chat/emojimart.js"></script>
+                <script src="~/js/emojimart.js"></script>
             </div>
             <input class="hidden" type="button" id="reconnectButton" name="Reconnect to chat" value="Reconnect to chat" disabled />
         </div>
         <script src="https://twemoji.maxcdn.com/2/twemoji.min.js?12.0.4" crossorigin="anonymous"></script>
-        <script src="/lib/signalr/dist/browser/signalr.min.js"></script>
-        <script src="/js/chat.js"></script>
+        <script src="~/lib/signalr/dist/browser/signalr.min.js"></script>
+        <script src="https://unpkg.com/timeago.js/dist/timeago.min.js"></script>
+        <script src="~/js/chat.js"></script>
     </section>
-    <script src="/js/ie-detector.js"></script>
-
-    <script src="/js/stream.js"></script>
+    <script src="~/js/ie-detector.js"></script>
+    <script src="~/js/stream.js"></script>
 </body>
 </html>

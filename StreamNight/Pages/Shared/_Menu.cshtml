@@ -1,0 +1,32 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using StreamNight.Areas.Account.Data
+@inject SignInManager<StreamNightUser> SignInManager
+
+@if (SignInManager.IsSignedIn(User))
+{
+    <ul>
+        <li class="menu-section"><h4>Stream</h4></li>
+        <li><a href="~/Account/">Profile</a></li>
+        <li><a href="~/">Watch Stream</a></li>
+        <li class="menu-section"><h4>Manage Account</h4></li>
+        <li><a href="~/Account/Manage/ExternalLogins">External Logins</a></li>
+        <li><a href="~/Account/Manage/PersonalData">Personal Data</a></li>
+        <li><a href="~/Account/Logout" style="color:cornflowerblue;">Logout</a></li>
+        @if (User.IsInRole("StreamController") || User.IsInRole("Administrator"))
+        {
+            <li class="menu-section"><h4>Administrator Controls</h4></li>
+            <li><a href="~/Admin/">General</a></li>
+            <li><a href="~/Admin/Status">Bot Status</a></li>
+            if (User.IsInRole("Administrator"))
+            {
+                <li><a href="~/Admin/Config">Bot Configuration</a></li>
+            }
+        }
+    </ul>
+}
+else
+{
+    <ul>
+        <li><a href="~/Account/Login">Login</a></li>
+    </ul>
+}

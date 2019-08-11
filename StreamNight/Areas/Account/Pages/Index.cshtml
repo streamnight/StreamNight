@@ -1,0 +1,34 @@
+﻿@page
+@model IndexModel
+@{
+    Layout = "_Layout";
+    ViewBag.Title = "Profile";
+}
+
+<section>
+    @if (User.Identity.IsAuthenticated)
+    {
+        <div id="profile-data">
+            <img id="inside-pfp" src="@Model.currentMember.AvatarUri" alt="Profile Picture" />
+            <h2>@Model.currentMember.Username</h2>
+        </div>
+        if (Model.currentMember.IsMember)
+        {
+            <p>Thanks for being part of our guild!</p>
+            <p>Click the link on the left to go to the stream page.</p>
+        }
+        else
+        {
+            if (string.IsNullOrEmpty(Model.currentMember.Username))
+            {
+                <script>(function () { location.reload(true); })();</script>
+            }
+            <p>We can't find you in our guild.</p>
+            <p>If this doesn't look right, follow <a href="~/Account/Logout">this link</a> and DM <code>streambot!login</code> to <strong>@Model.BotName</strong> from your account in the stream guild.</p>
+        }
+    }
+    else
+    {
+        <p>You're not signed in.</p>
+    }
+</section>

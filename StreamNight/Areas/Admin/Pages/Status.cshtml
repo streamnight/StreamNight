@@ -1,0 +1,33 @@
+﻿@page
+@model StreamNight.Areas.Admin.Pages.StatusModel
+@{
+    Layout = "_Layout";
+    ViewBag.Title = "Streambot Status";
+}
+
+<section>
+    <link rel="stylesheet" href="~/css/admin/status.css">
+    <h1>Streambot Status</h1>
+    <p>This page displays the current status of the bot.</p>
+
+    <p id="connection-status">Data may be outdated. Attempting to reconnect to the status page...</p>
+    <p id="connection-attempts">Connection attempts: 1</p>
+
+    <table id="status-table">
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div id="bot-control">
+        <button onclick="stopBot()">Stop Bot</button>
+        <button onclick="startBot()">Start Bot</button>
+        <button id="toggle-server-icon" onclick="toggleServerIcon()">Toggle Server Icon</button>
+    </div>
+    <script src="~/lib/signalr/dist/browser/signalr.min.js"></script>
+    <script src="~/js/admin/status.js"></script>
+</section>

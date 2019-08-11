@@ -184,6 +184,21 @@ details[open] summary ~ * {
     }
 }
 
+@media (-ms-high-contrast: active), (-ms-high-contrast: none) {
+    #settingsPopup {
+        display: flex !important;
+        flex-direction: column;
+    }
+
+    #toggle-options button {
+        width: calc(50% - 1.25rem);
+    }
+
+    .popupEntry {
+        align-self: auto !important;
+    }
+}
+
 body {
     display: grid;
     display: -ms-grid;
@@ -271,7 +286,7 @@ button:disabled {
     z-index: 1;
     justify-self: center;
     width: auto;
-    max-height: 100%;
+    max-height: 100% !important;
 }
 
 #offlineNotice {
@@ -281,12 +296,9 @@ button:disabled {
 
 #onlineNotice {
     position: absolute;
-}
-
-@supports (display : grid) {
-    #onlineNotice {
-        position: relative !important;
-    }
+    /* IE Workarounds */
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .stream-child > .vjs-big-play-button {
@@ -304,7 +316,8 @@ button:disabled {
     max-width: 100%;
 }
 
-.stream-child:not(.vjs-fullscreen) {
+.stream-child:not(.vjs-fullscreen),
+.stream-child:not(.vjs-fullscreen) .vjs-tech {
     max-height: calc(100vh - 5.5rem);
     transition: max-height ease-in-out 0.3s;
 }
@@ -358,8 +371,9 @@ button:disabled {
     grid-row: 1;
     grid-column: 1 / span 2;
     -ms-grid-row: 1;
-    -ms-grid-column: 2;
-    -ms-grid-column-span: 2;
+    -ms-grid-column: 1;
+    -ms-grid-column-span: 3;
+    -ms-grid-column-align: end;
     transition: transform ease-in-out 0.3s, opacity ease-in-out 0.3s;
     transform: none;
 }
@@ -490,7 +504,7 @@ button:disabled {
 }
 
 #toggleChatPlayer {
-    position: fixed;
+    position: absolute;
     -ms-grid-column-align: start;
     width: min-content;
     background: none;
@@ -523,9 +537,10 @@ button:disabled {
     display: flex;
     flex-direction: column;
     margin: 0.5rem;
-    transform: translateX(0%);
+    transform: none;
     transition: transform ease-in-out 0.3s, visibility ease-in-out 0.3s, opacity ease-in-out 0.3s;
     z-index: 2;
+    overflow-y: auto;
 }
 
 #statusData {
@@ -548,12 +563,10 @@ button:disabled {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
 
-    display: -ms-grid;
-    -ms-grid-columns: (1fr)[2];
-
     transform: translateY(3%);
-    overflow-y: scroll;
+    overflow-y: auto;
 
+    transition: opacity ease-in-out 0.1s;
 }
 
 #settingsPopup button {
@@ -761,7 +774,6 @@ button:disabled {
 emoji-picker {
     grid-column: 1;
     -ms-grid-column: 1;
-    position: absolute;
     /* For some reason "justify-self: right" doesn't work on Chrome. Use right: 1rem instead. */
     right: 1rem;
     transform: translateY(-100%);
@@ -804,6 +816,11 @@ emoji-picker .emoji-mart-emoji:hover::before, emoji-picker .emoji-mart-emoji:hov
     border-radius: 0.125rem;
 }
 
+.emoji-mart-emoji-custom span {
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
 @media screen and (max-width : 47.99rem) {
     .emoji-mart {
         width: calc(80vw - 2rem) !important;
@@ -839,7 +856,6 @@ emoji-picker .emoji-mart-emoji:hover::before, emoji-picker .emoji-mart-emoji:hov
 
 .video-js .vjs-tech {
     position: relative;
-    max-height: calc(100vh - 5.5rem);
     transition: max-height ease-in-out 0.3s;
 }
 

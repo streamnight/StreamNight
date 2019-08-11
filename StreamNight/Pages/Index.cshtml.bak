@@ -1,0 +1,86 @@
+﻿@page
+@model StreamNight.Pages.StreamModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="A Discord-integrated livestream powered by StreamNight." />
+
+    <title>Stream - @Model.StreamName</title>
+
+    <link href="https://vjs.zencdn.net/7.5.5/video-js.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://unpkg.com/emoji-mart@2.11.1/css/emoji-mart.css" />
+    <link rel="stylesheet" href="~/css/chat.css" />
+    <link rel="stylesheet" href="~/css/stream.css" />
+</head>
+<body>
+    <div class="hidden emojiDeselect"></div>
+    <article id="video">
+        <div id="streamContainer">
+            <img id="offlineNotice" class="stream-status stream-child" src="~/images/poster-offline.png" alt="Offline Poster" />
+            <img id="onlineNotice" class="stream-status hidden stream-child" src="~/images/poster-online.png" alt="Online Poster" />
+            <video id="streamPlayer" controls class="video-js vjs-default-skin vjs-fluid stream-child hidden"></video>
+        </div>
+
+        <div id="popups">
+            <button id="toggleChatPlayer" name="Toggle chat" onclick="toggleChat()">Toggle chat</button>
+            <div id="viewerDetails" class="popupDetails"></div>
+        </div>
+        <script src='https://vjs.zencdn.net/7.5.5/video.min.js'></script>
+        <script src="https://cdn.jsdelivr.net/npm/videojs-contrib-quality-levels@latest/dist/videojs-contrib-quality-levels.min.js"></script>
+    </article>
+    <section id="chat">
+        <div class="hidden emojiDeselect"></div>
+        <div id="statusData">
+            <details id="settings">
+                <summary id="optionsLabel">Options</summary>
+                <div id="settingsPopup" class="popupDetails">
+                    <p class="optionsLabel">Display Options</p>
+                    <div id="toggle-options">
+                        <button id="toggleChat" name="Toggle chat" onclick="toggleChat()">Toggle chat</button>
+                        <button id="toggleChat" name="Toggle viewers" onclick="toggleViewers()">Toggle viewers</button>
+                    </div>
+                    <p class="optionsLabel">Profile Options</p>
+                    <div id="profile-options">
+                        <button id="navProfile" name="Go to profile" onclick="window.location.href=window.location.protocol + '//' + window.location.host + '/Account/';">Go to profile</button>
+                    </div>
+                    <partial name="_StreamAdminPartial" />
+                </div>
+            </details>
+            <p id="connectionStatus" style="color:orange;">Connecting.</p>
+            <p id="viewerCount">? In Chat</p>
+        </div>
+        <div id="chatDisplay">
+            <ul id="chatbox">
+                <li><p>Welcome to the chatroom.</p></li>
+            </ul>
+            <div id="textInput">
+                <button id="emoteButton" name="Emote picker">❤️</button>
+                <textarea type="text" id="messageInput" placeholder="Message #@Model.ChannelName" oninput="sendTyping();" aria-label="Message input"></textarea>
+                <emoji-picker class="softHidden" aria-hidden=true id="emoji-picker"></emoji-picker>
+                <button id="sendButton" name="Send Message" aria-label="Send message">
+                    <svg style="height:50%;" fill="#fff" enable-background="new 0 0 535.5 535.5" version="1.1" viewBox="0 0 535.5 535.5" xml:space="preserve" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="0 497.25 535.5 267.75 0 38.25 0 216.75 382.5 267.75 0 318.75"></polygon>
+
+                    </svg>
+                    <!-- Icon by Google from Flaticon, ID send-button_60525-->
+                </button>
+                <script src="~/js/emojimart.js"></script>
+            </div>
+            <input class="hidden" type="button" id="reconnectButton" name="Reconnect to chat" value="Reconnect to chat" disabled />
+        </div>
+        <script src="https://twemoji.maxcdn.com/2/twemoji.min.js?12.0.4" crossorigin="anonymous"></script>
+        <script src="~/lib/signalr/dist/browser/signalr.min.js"></script>
+        <script src="~/js/chat.js"></script>
+    </section>
+    <script src="~/js/ie-detector.js"></script>
+
+    <script src="~/js/stream.js"></script>
+</body>
+</html>

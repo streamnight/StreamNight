@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using StreamNight.Areas.Identity.Data;
+using StreamNight.Areas.Account.Data;
 using StreamNight.Models;
 using StreamNight.SupportLibs.Discord;
 using StreamNight.SupportLibs.History;
@@ -18,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using StreamNight.SupportLibs.Status;
 
 namespace StreamNight
 {
@@ -52,15 +53,15 @@ namespace StreamNight
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2).AddRazorPagesOptions(options =>
             {
                 options.AllowAreas = true;
-                options.Conventions.AuthorizeAreaFolder("Identity", "/Account/Manage");
-                options.Conventions.AuthorizeAreaPage("Identity", "/Account/Logout");
+                options.Conventions.AuthorizeAreaFolder("Account", "/Manage");
+                options.Conventions.AuthorizeAreaPage("Account", "/Logout");
             });
 
             services.ConfigureApplicationCookie(options =>
             {
-                options.LoginPath = $"/Login";
-                options.LogoutPath = $"/Logout";
-                options.AccessDeniedPath = $"/Identity/Account/AccessDenied";
+                options.LoginPath = $"/Account/Login";
+                options.LogoutPath = $"/Account/Logout";
+                options.AccessDeniedPath = $"/Account/AccessDenied";
             });
 
             services.AddCors(options =>
@@ -106,6 +107,7 @@ namespace StreamNight
             app.UseSignalR(routes =>
             {
                 routes.MapHub<BridgeHub>("/bridgehub");
+                routes.MapHub<StatusHub>("/admin/statushub");
             });
 
             app.UseMvc();
@@ -122,11 +124,19 @@ namespace StreamNight
 
             IdentityResult roleResult;
             //Adding Admin Role
-            bool roleCheck = await RoleManager.RoleExistsAsync("Administrator");
-            if (!roleCheck)
+            bool adminRoleCheck = await RoleManager.RoleExistsAsync("Administrator");
+            if (!adminRoleCheck)
             {
                 //create the roles and seed them to the database
                 roleResult = await RoleManager.CreateAsync(new StreamNightRole("Administrator"));
+            }
+
+            //Adding Moderator Role
+            bool streamRoleCheck = await RoleManager.RoleExistsAsync("StreamController");
+            if (!streamRoleCheck)
+            {
+                //create the roles and seed them to the database
+                roleResult = await RoleManager.CreateAsync(new StreamNightRole("StreamController"));
             }
         }
     }
