@@ -37,7 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 import { LogLevel } from "./ILogger";
 import { TransferFormat } from "./ITransport";
-import { Arg, getDataDetail } from "./Utils";
+import { Arg, getDataDetail, Platform } from "./Utils";
 /** @private */
 var WebSocketTransport = /** @class */ (function () {
     function WebSocketTransport(httpClient, accessTokenFactory, logger, logMessageContent, webSocketConstructor) {
@@ -72,7 +72,7 @@ var WebSocketTransport = /** @class */ (function () {
                             url = url.replace(/^http/, "ws");
                             var webSocket;
                             var cookies = _this.httpClient.getCookieString(url);
-                            if (typeof window === "undefined" && cookies) {
+                            if (Platform.isNode && cookies) {
                                 // Only pass cookies when in non-browser environments
                                 webSocket = new _this.webSocketConstructor(url, undefined, {
                                     headers: {
@@ -98,6 +98,9 @@ var WebSocketTransport = /** @class */ (function () {
                                 // ErrorEvent is a browser only type we need to check if the type exists before using it
                                 if (typeof ErrorEvent !== "undefined" && event instanceof ErrorEvent) {
                                     error = event.error;
+                                }
+                                else {
+                                    error = new Error("There was an error with the transport.");
                                 }
                                 reject(error);
                             };

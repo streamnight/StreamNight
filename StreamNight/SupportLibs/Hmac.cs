@@ -9,6 +9,12 @@ namespace StreamNight.SupportLibs
 {
     public class Hmac
     {
+        /// <summary>
+        /// Signs the provided message with the key.
+        /// </summary>
+        /// <param name="message">The message to sign.</param>
+        /// <param name="key">The HMAC key to use.</param>
+        /// <returns>The HMAC-signed message.</returns>
         public static string SignMessage(string message, string key)
         {
             string output;
@@ -27,6 +33,12 @@ namespace StreamNight.SupportLibs
             return output;
         }
 
+        /// <summary>
+        /// Verifies the HMAC signature on the message.
+        /// </summary>
+        /// <param name="signedMessage">The HMAC-signed message.</param>
+        /// <param name="key">The HMAC key used to sign the message.</param>
+        /// <returns>A boolean representing if the message was successfully verified.</returns>
         public static bool VerifyMessage(string signedMessage, string key)
         {
             using (HMACSHA256 hmac = new HMACSHA256(Encoding.UTF8.GetBytes(key)))
@@ -59,6 +71,11 @@ namespace StreamNight.SupportLibs
             }
             return false;
         }
+        /// <summary>
+        /// Strips the HMAC signature from the signed message.
+        /// </summary>
+        /// <param name="signedMessage">The HMAC-signed message.</param>
+        /// <returns>The message without the HMAC signature.</returns>
         public static string DecodeMessage(string signedMessage)
         {
             using (HMACSHA256 hmac = new HMACSHA256(new byte[0]))

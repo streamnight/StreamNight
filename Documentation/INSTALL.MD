@@ -4,7 +4,7 @@
 
 ### Runtime Prerequisites
 
-* [.NET Core 2.2 with ASP.NET Core](https://dotnet.microsoft.com/download)
+* [.NET Core 3.0 with ASP.NET Core](https://dotnet.microsoft.com/download)
 
 ### Configuring StreamNight
 

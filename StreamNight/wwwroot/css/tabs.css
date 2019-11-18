@@ -1,0 +1,89 @@
+﻿#twitchStreams {
+    width: 100%;
+    z-index: 0;
+}
+
+.twitchStream {
+    position: relative;
+    height: 0;
+    padding-top: 56.25%;
+    width: 100%;
+}
+
+    .twitchStream iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+#popups {
+	margin-top: 0 !important;
+}
+
+#twitchTabs {
+    display: flex;
+    overflow-x: auto;
+
+    scrollbar-width: thin;
+    scrollbar-color: #303235 #0e0e0e;
+
+    position: absolute;
+    top: 0;
+    right: 0;
+
+    justify-content: flex-end;
+    z-index: 5;
+    padding-right: 0.5rem;
+}
+
+    #twitchTabs::-webkit-scrollbar {
+        width: 0.25rem;
+    }
+
+    #twitchTabs::-webkit-scrollbar-thumb {
+        background-color: #303235;
+        border-radius: 0.125rem;
+    }
+
+.streamTab {
+    white-space: nowrap;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    padding: 0.3rem;
+    margin: 0;
+    background-color: #181818;
+    border: 1px solid #151515;
+    color: #fff;
+}
+
+.twitchChat {
+    height: 100%;
+}
+
+#video {
+    position: relative;
+}
+
+/* Overriding other video.js styles to fit tabs in */
+
+.stream-child:not(.vjs-fullscreen), .stream-child:not(.vjs-fullscreen) .vjs-tech {
+    max-height: calc(100vh - 7rem) !important;
+}
+
+@media not (orientation : portrait) {
+    #twitchStreams {
+        margin-left: 0.5rem;
+    }
+
+    #viewerDetails {
+        grid-row: 2;
+    }
+
+    #twitchTabs {
+        position: relative !important;
+        grid-column: 1 / span 2;
+        -ms-grid-column: 1;
+        -ms-grid-column-span: 3;
+        margin-bottom: 0.1rem;
+    }
+}

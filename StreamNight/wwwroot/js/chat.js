@@ -199,9 +199,10 @@ registerTap(document.getElementById("sendButton"), sendClick);
 
 
 document.getElementById("messageInput")
-    .addEventListener("keyup", function (event) {
-        event.preventDefault();
-        if (event.keyCode === 13) {
+    .addEventListener("keydown", function (event) {
+        /* keyCode is deprecated but the newer standards aren't compatible with EdgeHTML or IE */
+        if (event.keyCode === 13 && !event.shiftKey) {
+            event.preventDefault();
             document.getElementById("sendButton").click();
         }
     });

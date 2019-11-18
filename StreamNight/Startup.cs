@@ -1,24 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using StreamNight.Areas.Account.Data;
 using StreamNight.Models;
 using StreamNight.SupportLibs.Discord;
 using StreamNight.SupportLibs.History;
 using StreamNight.SupportLibs.SignalR;
-using DSharpPlus;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using StreamNight.SupportLibs.Status;
+using System;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace StreamNight
 {
@@ -34,27 +34,60 @@ namespace StreamNight
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddAuthentication()
-            .AddDiscord(x =>
+            services.AddControllers();
+
+            // ASP.NET Identity
+            services.AddRazorPages(options =>
             {
-                x.AppId = Configuration["Discord:AppId"];
-                x.AppSecret = Configuration["Discord:AppSecret"];
-                x.Scope.Add("identify");
-                x.CallbackPath = Configuration["Discord:Callback"];
+                options.Conventions.AuthorizeAreaFolder("Account", "/Manage");
+                options.Conventions.AuthorizeAreaPage("Account", "/Logout");
             });
+
+            services.AddAuthentication()
+                .AddOAuth("Discord", "Discord", options =>
+                {
+                    options.AuthorizationEndpoint = "https://discordapp.com/api/oauth2/authorize";
+                    options.TokenEndpoint = "https://discordapp.com/api/oauth2/token";
+                    options.UserInformationEndpoint = "https://discordapp.com/api/users/@me";
+
+                    options.ClientId = Configuration["Discord:AppId"];
+                    options.ClientSecret = Configuration["Discord:AppSecret"];
+                    options.Scope.Add("identify");
+                    options.CallbackPath = Configuration["Discord:Callback"];
+
+                    options.ClaimActions.MapJsonKey(ClaimTypes.NameIdentifier, "id", ClaimValueTypes.UInteger64);
+                    options.ClaimActions.MapJsonKey(ClaimTypes.Name, "username", ClaimValueTypes.String);
+                    options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email", ClaimValueTypes.Email);
+                    options.ClaimActions.MapJsonKey("urn:discord:discriminator", "discriminator", ClaimValueTypes.UInteger32);
+                    options.ClaimActions.MapJsonKey("urn:discord:avatar", "avatar", ClaimValueTypes.String);
+                    options.ClaimActions.MapJsonKey("urn:discord:verified", "verified", ClaimValueTypes.Boolean);
+
+                    options.Events = new OAuthEvents
+                    {
+                        OnCreatingTicket = async context =>
+                        {
+                            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, context.Options.UserInformationEndpoint);
+                            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", context.AccessToken);
+
+                            using (HttpResponseMessage response = await context.Backchannel.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.HttpContext.RequestAborted))
+                            {
+                                if (!response.IsSuccessStatusCode)
+                                {
+                                    response.EnsureSuccessStatusCode();
+                                }
+
+                                using var userPayload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                                context.RunClaimActions(userPayload.RootElement);
+                            }
+                        }
+                    };
+                });
 
             services.AddAuthorization(options =>
             {
                 options.AddPolicy("RequireAdministratorRole",
                      policy => policy.RequireRole("Administrator"));
-            });
-
-            // ASP.NET Identity
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2).AddRazorPagesOptions(options =>
-            {
-                options.AllowAreas = true;
-                options.Conventions.AuthorizeAreaFolder("Account", "/Manage");
-                options.Conventions.AuthorizeAreaPage("Account", "/Logout");
             });
 
             services.ConfigureApplicationCookie(options =>
@@ -86,7 +119,7 @@ namespace StreamNight
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IServiceProvider services, StreamNightAccountDbContext chatContext)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IServiceProvider services, StreamNightAccountDbContext chatContext)
         {
             if (env.IsDevelopment())
             {
@@ -99,18 +132,26 @@ namespace StreamNight
             }
 
             app.UseStaticFiles();
-            app.UseAuthentication();
 
             // HTTPS is handled upstream by Caddy.
             // app.UseHttpsRedirection();
 
-            app.UseSignalR(routes =>
-            {
-                routes.MapHub<BridgeHub>("/bridgehub");
-                routes.MapHub<StatusHub>("/admin/statushub");
-            });
+            app.UseRouting();
 
-            app.UseMvc();
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            app.UseCors();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+                endpoints.MapRazorPages();
+
+                endpoints.MapHub<BridgeHub>("/bridgehub");
+                endpoints.MapHub<StatusHub>("/admin/statushub");
+                endpoints.MapHub<TwitchHub>("/admin/twitchhub");
+            });
 
             CreateUserRoles(services, chatContext).Wait();
         }
@@ -120,15 +161,13 @@ namespace StreamNight
             dbContext.Database.Migrate();
 
             var RoleManager = serviceProvider.GetRequiredService<RoleManager<StreamNightRole>>();
-            var UserManager = serviceProvider.GetRequiredService<UserManager<StreamNightUser>>();
 
-            IdentityResult roleResult;
             //Adding Admin Role
             bool adminRoleCheck = await RoleManager.RoleExistsAsync("Administrator");
             if (!adminRoleCheck)
             {
                 //create the roles and seed them to the database
-                roleResult = await RoleManager.CreateAsync(new StreamNightRole("Administrator"));
+                _ = await RoleManager.CreateAsync(new StreamNightRole("Administrator"));
             }
 
             //Adding Moderator Role
@@ -136,7 +175,7 @@ namespace StreamNight
             if (!streamRoleCheck)
             {
                 //create the roles and seed them to the database
-                roleResult = await RoleManager.CreateAsync(new StreamNightRole("StreamController"));
+                _ = await RoleManager.CreateAsync(new StreamNightRole("StreamController"));
             }
         }
     }

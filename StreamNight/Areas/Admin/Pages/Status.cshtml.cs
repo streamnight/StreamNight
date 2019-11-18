@@ -12,16 +12,16 @@ namespace StreamNight.Areas.Admin.Pages
     [Authorize(Roles = "StreamController,Administrator")]
     public class StatusModel : PageModel
     {
-        private readonly Client _discordClient;
+        public readonly Client DiscordClient;
 
         public string LogoPath;
         public string StreamName;
 
         public StatusModel(DiscordBot discordBot)
         {
-            _discordClient = discordBot.DiscordClient;
-            LogoPath = _discordClient.LogoWebPath;
-            StreamName = _discordClient.StreamName;
+            DiscordClient = discordBot.DiscordClient;
+            LogoPath = DiscordClient.LogoWebPath;
+            StreamName = DiscordClient.StreamName;
         }
 
         public void OnGet()

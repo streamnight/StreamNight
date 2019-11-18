@@ -79,7 +79,7 @@ var ServerSentEventsTransport = /** @class */ (function () {
                                 return;
                             }
                             var eventSource;
-                            if (typeof window !== "undefined") {
+                            if (Utils_1.Platform.isBrowser || Utils_1.Platform.isWebWorker) {
                                 eventSource = new _this.eventSourceConstructor(url, { withCredentials: true });
                             }
                             else {

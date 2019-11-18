@@ -9,78 +9,196 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="A Discord-integrated livestream powered by StreamNight." />
+    <meta name="description" content="A Discord-integrated livestream powered by StreamNight.">
 
     <title>Stream - @Model.StreamName</title>
 
     <link href="https://vjs.zencdn.net/7.5.5/video-js.css" rel="stylesheet">
 
+	<link rel="icon" href="@Model.LogoPath">
+
     <link rel="stylesheet" href="https://unpkg.com/emoji-mart@2.11.1/css/emoji-mart.css" />
     <link rel="stylesheet" href="~/css/chat.css" />
     <link rel="stylesheet" href="~/css/stream.css" />
+    @if (Model.TwitchEnabled)
+    {
+        <link rel="stylesheet" href="~/css/tabs.css" />
+    }
 </head>
 <body>
     <div class="hidden emojiDeselect"></div>
     <article id="video">
-        <div id="streamContainer">
+        <div id="streamContainer" class="streamItem activeTab">
             <img id="offlineNotice" class="stream-status stream-child" src="~/images/poster-offline.png" alt="Offline Poster" />
             <img id="onlineNotice" class="stream-status hidden stream-child" src="~/images/poster-online.png" alt="Online Poster" />
             <video id="streamPlayer" controls class="video-js vjs-default-skin vjs-fluid stream-child hidden"></video>
         </div>
 
+        @if (Model.TwitchEnabled)
+        {
+            <script src="https://player.twitch.tv/js/embed/v1.js"></script>
+            <script>
+                var twitchPlayers = new Array();
+            </script>
+            <div id="twitchStreams" class="stream-child hidden">
+                @foreach (string twitchChannelStream in Model.TwitchChannels)
+                {
+
+                    <div id="stream-@twitchChannelStream" class="twitchStream streamItem stream-child"></div>
+                    <script>
+                        var @(twitchChannelStream + "Options") = {
+                            channel: "@twitchChannelStream",
+                            width: "100%",
+                            height: "100%"
+                        };
+                        var @(twitchChannelStream + "Player") = new Twitch.Player("stream-@twitchChannelStream", @(twitchChannelStream + "Options"));
+                        document.getElementById("stream-@twitchChannelStream").firstChild.classList.add("stream-child");
+                        @(twitchChannelStream + "Player").setVolume(1);
+                        @(twitchChannelStream + "Player").pause();
+                        twitchPlayers.push(@(twitchChannelStream + "Player"));
+                    </script>
+                }
+            </div>
+        }
+
         <div id="popups">
             <button id="toggleChatPlayer" name="Toggle chat" onclick="toggleChat()">Toggle chat</button>
+            @if (Model.TwitchEnabled)
+            {
+                <div id="twitchTabs">
+                    @foreach (string twitchChannelTab in Model.TwitchChannels)
+                    {
+                        <button class="streamTab" onclick="openTab('@twitchChannelTab')">@twitchChannelTab</button>
+                    }
+                    <button class="streamTab" onclick="openTab('streamContainer')">@(Char.ToUpper(Model.ShortServerName[0]) + Model.ShortServerName?.Substring(1)) Stream</button>
+                    <button class="streamTab" onclick="switchChat()" style="background-color:#101010;color:darkgrey;">Switch Chat</button>
+                </div>
+            }
             <div id="viewerDetails" class="popupDetails"></div>
         </div>
+
         <script src='https://vjs.zencdn.net/7.5.5/video.min.js'></script>
         <script src="https://cdn.jsdelivr.net/npm/videojs-contrib-quality-levels@latest/dist/videojs-contrib-quality-levels.min.js"></script>
     </article>
     <section id="chat">
         <div class="hidden emojiDeselect"></div>
-        <div id="statusData">
-            <details id="settings">
-                <summary id="optionsLabel">Options</summary>
-                <div id="settingsPopup" class="popupDetails">
-                    <p class="optionsLabel">Display Options</p>
-                    <div id="toggle-options">
-                        <button id="toggleChat" name="Toggle chat" onclick="toggleChat()">Toggle chat</button>
-                        <button id="toggleChat" name="Toggle viewers" onclick="toggleViewers()">Toggle viewers</button>
-                    </div>
-                    <p class="optionsLabel">Profile Options</p>
-                    <div id="profile-options">
-                        <button id="navProfile" name="Go to profile" onclick="window.location.href=window.location.protocol + '//' + window.location.host + '/Account/';">Go to profile</button>
-                    </div>
-                    <partial name="_StreamAdminPartial" />
-                </div>
-            </details>
-            <p id="connectionStatus" style="color:orange;">Connecting.</p>
-            <p id="viewerCount">? In Chat</p>
+        <div id="debugInfo" class="hidden">
+            <button id="closeDebug" onclick="document.getElementById('debugInfo').classList.add('hidden');">Close debug info</button>
+            <div id="systemBandwidth"></div>
+            <div id="videoBandwidth"></div>
+            <div id="videoCodecs"></div>
+            <div id="corruptedFrames"></div>
+            <div id="droppedFrames"></div>
+            <div id="totalFrames"></div>
+            <div id="totalTransfers"></div>
+            <div id="totalLength"></div>
+            <div id="playlistRedirected">Playlist Redirected: @Model.RedirectPlaylist</div>
+            <div id="playlistSource"></div>
+
+            <script>
+                var tracks;
+                var segmentMetadataTrack;
+
+                var sysBandwidthDiv = document.getElementById("systemBandwidth");
+                var videoBandwidthDiv = document.getElementById("videoBandwidth");
+                var videoCodecsDiv = document.getElementById("videoCodecs");
+                var corruptedFramesDiv = document.getElementById("corruptedFrames");
+                var droppedFramesDiv = document.getElementById("droppedFrames");
+                var totalFramesDiv = document.getElementById("totalFrames");
+                var totalTransfersDiv = document.getElementById("totalTransfers");
+                var totalLengthDiv = document.getElementById("totalLength");
+
+                function printDebug() {
+                    if (player) {
+                        var hlsTech = player.tech_.hls;
+                        var activeCue = segmentMetadataTrack.activeCues[0];
+                        var videoKbps = Math.floor((activeCue.value.byteLength / (activeCue.endTime - activeCue.startTime)) / 125);
+
+                        sysBandwidthDiv.innerText = "System Bandwidth: " + Math.floor(hlsTech.systemBandwidth / 8000) + "KB/s";
+                        videoBandwidthDiv.innerText = "Video Bandwidth: " + videoKbps + "kbit/s" + " (" + Math.floor(videoKbps / 8) + "KB/s)";
+                        videoCodecsDiv.innerText = "Codecs: " + activeCue.value.codecs;
+                        corruptedFramesDiv.innerText = "Corrupted Frames: " + hlsTech.stats.videoPlaybackQuality.corruptedVideoFrames;
+                        droppedFramesDiv.innerText = "Dropped Frames: " + hlsTech.stats.videoPlaybackQuality.droppedVideoFrames;
+                        totalFramesDiv.innerText = "Total Frames: " + hlsTech.stats.videoPlaybackQuality.totalVideoFrames;
+                        totalTransfersDiv.innerText = "Total Transfers: " + (hlsTech.stats.mediaBytesTransferred / 1000000).toFixed(2) + "MB";
+                        totalLengthDiv.innerText = "Total Length: " + Math.floor(hlsTech.stats.mediaSecondsLoaded) + "s";
+                    }
+                }
+
+                setInterval(printDebug, 3000);
+            </script>
         </div>
-        <div id="chatDisplay">
-            <ul id="chatbox">
-                <li><p>Welcome to the chatroom.</p></li>
-            </ul>
-            <div id="textInput">
-                <button id="emoteButton" name="Emote picker">❤️</button>
-                <textarea type="text" id="messageInput" placeholder="Message #@Model.ChannelName" oninput="sendTyping();" aria-label="Message input"></textarea>
-                <emoji-picker class="softHidden" aria-hidden=true id="emoji-picker"></emoji-picker>
-                <button id="sendButton" name="Send Message" aria-label="Send message">
-                    <svg style="height:50%;" fill="#fff" enable-background="new 0 0 535.5 535.5" version="1.1" viewBox="0 0 535.5 535.5" xml:space="preserve" xmlns="http://www.w3.org/2000/svg">
-                    <polygon points="0 497.25 535.5 267.75 0 38.25 0 216.75 382.5 267.75 0 318.75"></polygon>
+        <div id="mainChat" class="chatPanel">
+            <div id="statusData">
+                <details id="settings">
+                    <summary id="optionsLabel">Options</summary>
+                    <div id="settingsPopup" class="popupDetails">
+                        <p class="optionsLabel">Display Options</p>
+                        <div id="toggle-options">
+                            <button id="toggleChat" name="Toggle chat" onclick="toggleChat()">Toggle chat</button>
+                            <button id="toggleChat" name="Toggle viewers" onclick="toggleViewers()">Toggle viewers</button>
+                        </div>
+                        <p class="optionsLabel">Profile Options</p>
+                        <div id="profile-options">
+                            <button id="navProfile" name="Go to profile" onclick="window.location.href=window.location.protocol + '//' + window.location.host + '/Account/';">Go to profile</button>
+                        </div>
+                        <p class="optionsLabel">Video Options</p>
+                        <div id="video-options">
+                            <button id="toggleDebug" name="Toggle debug info" onclick="document.getElementById('debugInfo').classList.toggle('hidden');">Toggle debug info</button>
+                        </div>
+                        <partial name="_StreamAdminPartial" />
+                    </div>
+                </details>
+                <p id="connectionStatus" style="color:orange;">Connecting.</p>
+                <p id="viewerCount">? In Chat</p>
+            </div>
+            <div id="chatDisplay">
+                <ul id="chatbox">
+                    <li><p>Welcome to the chatroom.</p></li>
+                </ul>
+                <div id="textInput">
+                    <button id="emoteButton" name="Emote picker">❤️</button>
+                    <textarea type="text" id="messageInput" placeholder="Message #@Model.ChannelName" oninput="sendTyping();" aria-label="Message input"></textarea>
+                    <emoji-picker class="softHidden" aria-hidden=true id="emoji-picker"></emoji-picker>
+                    <button id="sendButton" name="Send Message" aria-label="Send message">
+                        <svg style="height:50%;" fill="#fff" enable-background="new 0 0 535.5 535.5" version="1.1" viewBox="0 0 535.5 535.5" xml:space="preserve" xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="0 497.25 535.5 267.75 0 38.25 0 216.75 382.5 267.75 0 318.75"></polygon>
 
                     </svg>
-                    <!-- Icon by Google from Flaticon, ID send-button_60525-->
-                </button>
-                <script src="~/js/emojimart.js"></script>
+                        <!-- Icon by Google from Flaticon, ID send-button_60525-->
+                    </button>
+                    <script src="~/js/emojimart.js"></script>
+                </div>
+                <input class="hidden" type="button" id="reconnectButton" name="Reconnect to chat" value="Reconnect to chat" disabled />
             </div>
-            <input class="hidden" type="button" id="reconnectButton" name="Reconnect to chat" value="Reconnect to chat" disabled />
         </div>
+        @if (Model.TwitchEnabled)
+        {
+            <div id="twitchChat" class="chatPanel hidden">
+                @foreach (string twitchChannelChat in Model.TwitchChannels)
+                {
+                    <iframe id="chat-@twitchChannelChat" class="twitchChat streamItem hidden" frameborder="0" scrolling="no" src="https://www.twitch.tv/embed/@twitchChannelChat/chat?darkpopout"></iframe>
+                }
+            </div>
+        }
         <script src="https://twemoji.maxcdn.com/2/twemoji.min.js?12.0.4" crossorigin="anonymous"></script>
         <script src="~/lib/signalr/dist/browser/signalr.min.js"></script>
         <script src="https://unpkg.com/timeago.js/dist/timeago.min.js"></script>
         <script src="~/js/chat.js"></script>
     </section>
     <script src="~/js/ie-detector.js"></script>
+    @if (Model.RedirectPlaylist)
+    {
+        <script>
+            var redirectedUrl = "@Model.RedirectTarget";
+            var playlistRedirected = true;
+        </script>
+    }
     <script src="~/js/stream.js"></script>
+
+    @if (Model.TwitchEnabled)
+    {
+        <script src="~/js/tabs.js"></script>
+    }
 </body>
 </html>

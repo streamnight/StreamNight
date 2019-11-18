@@ -4,8 +4,8 @@
     grid-template-columns: 1fr 1fr;
     -ms-grid-columns: (1fr)[2];
 
-    grid-gap: 1rem;
-    -ms-grid-gap: 1rem;
+    grid-column-gap: 1rem;
+    -ms-grid-column-gap: 1rem;
 
     width: 100%;
 }
@@ -14,4 +14,24 @@
     grid-column: 1 / span 2;
     -ms-grid-column: 1;
     -ms-grid-column-span: 3;
+}
+
+#presenceForm {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 1rem;
+
+    display: -ms-grid;
+    -ms-grid-columns: 1fr 1fr;
+    -ms-grid-column-gap: 1rem;
+}
+
+#redirect-control {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 1rem;
+
+    display: -ms-grid;
+    -ms-grid-columns: 1fr 1fr;
+    -ms-grid-column-gap: 1rem;
 }

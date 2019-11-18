@@ -48,7 +48,7 @@ namespace StreamNight.SupportLibs.Discord
                 {
                     Client.StreamUp = true;
                     await message.RespondAsync(embed: PresetEmbeds.SuccessEmbed("Stream marked as up.", message).Build());
-                    await Client.messageHandler.StreamUp();
+                    await Client.MessageHandler.StreamUp();
                 }
                 else
                 {

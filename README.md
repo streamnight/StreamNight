@@ -11,18 +11,14 @@ StreamNight is a HLS streaming frontend with Discord integration.
 Features include:
 
 * Two-way Discord integration, with support for both Unicode emoji and server emotes
-
 * Fully responsive UI that naturally scales from phones to PCs
-
 * Theoretically unlimited users
-
 * A reliable video player (video.js) with a manual quality switcher
-
 * Works on all up-to-date modern browsers. Partially works on Internet Explorer 11
 
 ## System Requirements
 
-StreamNight will run on anything that supports [.NET Core 2.2](https://github.com/dotnet/core/blob/master/release-notes/2.2/2.2-supported-os.md), but it's best to host it on a machine with a fast, reliable internet connection.
+StreamNight will run on anything that supports [.NET Core 3.0](https://github.com/dotnet/core/blob/master/release-notes/3.0/3.0-supported-os.md), but it's best to host it on a machine with a fast, reliable internet connection.
 
 It'll generally use 400-500MB of RAM on a machine with memory to spare.
 

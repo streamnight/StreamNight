@@ -16,7 +16,7 @@ var JsonHubProtocol = /** @class */ (function () {
         /** @inheritDoc */
         this.transferFormat = TransferFormat.Text;
     }
-    /** Creates an array of {@link @aspnet/signalr.HubMessage} objects from the specified serialized representation.
+    /** Creates an array of {@link @microsoft/signalr.HubMessage} objects from the specified serialized representation.
      *
      * @param {string} input A string containing the serialized representation.
      * @param {ILogger} logger A logger that will be used to log messages that occur during parsing.
@@ -66,7 +66,7 @@ var JsonHubProtocol = /** @class */ (function () {
         }
         return hubMessages;
     };
-    /** Writes the specified {@link @aspnet/signalr.HubMessage} to a string and returns it.
+    /** Writes the specified {@link @microsoft/signalr.HubMessage} to a string and returns it.
      *
      * @param {HubMessage} message The message to write.
      * @returns {string} A string containing the serialized representation of the message.

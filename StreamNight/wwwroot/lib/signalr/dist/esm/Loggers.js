@@ -8,7 +8,7 @@ var NullLogger = /** @class */ (function () {
     // tslint:disable-next-line
     NullLogger.prototype.log = function (_logLevel, _message) {
     };
-    /** The singleton instance of the {@link @aspnet/signalr.NullLogger}. */
+    /** The singleton instance of the {@link @microsoft/signalr.NullLogger}. */
     NullLogger.instance = new NullLogger();
     return NullLogger;
 }());

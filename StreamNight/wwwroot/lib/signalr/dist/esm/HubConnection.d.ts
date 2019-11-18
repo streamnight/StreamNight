@@ -2,25 +2,39 @@ import { IStreamResult } from "./Stream";
 /** Describes the current state of the {@link HubConnection} to the server. */
 export declare enum HubConnectionState {
     /** The hub connection is disconnected. */
-    Disconnected = 0,
+    Disconnected = "Disconnected",
+    /** The hub connection is connecting. */
+    Connecting = "Connecting",
     /** The hub connection is connected. */
-    Connected = 1
+    Connected = "Connected",
+    /** The hub connection is disconnecting. */
+    Disconnecting = "Disconnecting",
+    /** The hub connection is reconnecting. */
+    Reconnecting = "Reconnecting"
 }
 /** Represents a connection to a SignalR Hub. */
 export declare class HubConnection {
     private readonly cachedPingMessage;
     private readonly connection;
     private readonly logger;
+    private readonly reconnectPolicy?;
     private protocol;
     private handshakeProtocol;
     private callbacks;
     private methods;
-    private id;
+    private invocationId;
     private closedCallbacks;
+    private reconnectingCallbacks;
+    private reconnectedCallbacks;
     private receivedHandshakeResponse;
     private handshakeResolver;
     private handshakeRejecter;
+    private stopDuringStartError?;
     private connectionState;
+    private connectionStarted;
+    private startPromise?;
+    private stopPromise?;
+    private reconnectDelayHandle?;
     private timeoutHandle?;
     private pingServerHandle?;
     /** The server timeout in milliseconds.
@@ -38,16 +52,30 @@ export declare class HubConnection {
     private constructor();
     /** Indicates the state of the {@link HubConnection} to the server. */
     readonly state: HubConnectionState;
+    /** Represents the connection id of the {@link HubConnection} on the server. The connection id will be null when the connection is either
+     *  in the disconnected state or if the negotiation step was skipped.
+     */
+    readonly connectionId: string | null;
+    /** Indicates the url of the {@link HubConnection} to the server. */
+    /**
+    * Sets a new url for the HubConnection. Note that the url can only be changed when the connection is in either the Disconnected or
+    * Reconnecting states.
+    * @param {string} url The url to connect to.
+    */
+    baseUrl: string;
     /** Starts the connection.
      *
      * @returns {Promise<void>} A Promise that resolves when the connection has been successfully established, or rejects with an error.
      */
     start(): Promise<void>;
+    private startWithStateTransitions;
+    private startInternal;
     /** Stops the connection.
      *
      * @returns {Promise<void>} A Promise that resolves when the connection has been successfully terminated, or rejects with an error.
      */
     stop(): Promise<void>;
+    private stopInternal;
     /** Invokes a streaming hub method on the server using the specified name and arguments.
      *
      * @typeparam T The type of the items returned by the server.
@@ -57,6 +85,11 @@ export declare class HubConnection {
      */
     stream<T = any>(methodName: string, ...args: any[]): IStreamResult<T>;
     private sendMessage;
+    /**
+     * Sends a js object to the server.
+     * @param message The js object to serialize and send.
+     */
+    private sendWithProtocol;
     /** Invokes a hub method on the server using the specified name and arguments. Does not wait for a response from the receiver.
      *
      * The Promise returned by this method resolves when the client has sent the invocation to the server. The server may still
@@ -92,11 +125,11 @@ export declare class HubConnection {
     off(methodName: string): void;
     /** Removes the specified handler for the specified hub method.
      *
-     * You must pass the exact same Function instance as was previously passed to {@link @aspnet/signalr.HubConnection.on}. Passing a different instance (even if the function
+     * You must pass the exact same Function instance as was previously passed to {@link @microsoft/signalr.HubConnection.on}. Passing a different instance (even if the function
      * body is the same) will not remove the handler.
      *
      * @param {string} methodName The name of the method to remove handlers for.
-     * @param {Function} method The handler to remove. This must be the same Function instance as the one passed to {@link @aspnet/signalr.HubConnection.on}.
+     * @param {Function} method The handler to remove. This must be the same Function instance as the one passed to {@link @microsoft/signalr.HubConnection.on}.
      */
     off(methodName: string, method: (...args: any[]) => void): void;
     /** Registers a handler that will be invoked when the connection is closed.
@@ -104,6 +137,16 @@ export declare class HubConnection {
      * @param {Function} callback The handler that will be invoked when the connection is closed. Optionally receives a single argument containing the error that caused the connection to close (if any).
      */
     onclose(callback: (error?: Error) => void): void;
+    /** Registers a handler that will be invoked when the connection starts reconnecting.
+     *
+     * @param {Function} callback The handler that will be invoked when the connection starts reconnecting. Optionally receives a single argument containing the error that caused the connection to start reconnecting (if any).
+     */
+    onreconnecting(callback: (error?: Error) => void): void;
+    /** Registers a handler that will be invoked when the connection successfully reconnects.
+     *
+     * @param {Function} callback The handler that will be invoked when the connection successfully reconnects.
+     */
+    onreconnected(callback: (connectionId?: string) => void): void;
     private processIncomingData;
     private processHandshakeResponse;
     private resetKeepAliveInterval;
@@ -111,9 +154,18 @@ export declare class HubConnection {
     private serverTimeout;
     private invokeClientMethod;
     private connectionClosed;
+    private completeClose;
+    private reconnect;
+    private getNextRetryDelay;
+    private cancelCallbacksWithError;
     private cleanupPingTimer;
     private cleanupTimeout;
     private createInvocation;
+    private launchStreams;
+    private replaceStreamingParams;
+    private isObservable;
     private createStreamInvocation;
     private createCancelInvocation;
+    private createStreamItemMessage;
+    private createCompletionMessage;
 }

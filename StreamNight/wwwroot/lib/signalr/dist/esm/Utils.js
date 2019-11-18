@@ -56,6 +56,34 @@ var Arg = /** @class */ (function () {
 }());
 export { Arg };
 /** @private */
+var Platform = /** @class */ (function () {
+    function Platform() {
+    }
+    Object.defineProperty(Platform, "isBrowser", {
+        get: function () {
+            return typeof window === "object";
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Platform, "isWebWorker", {
+        get: function () {
+            return typeof self === "object" && "importScripts" in self;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Platform, "isNode", {
+        get: function () {
+            return !this.isBrowser && !this.isWebWorker;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    return Platform;
+}());
+export { Platform };
+/** @private */
 export function getDataDetail(data, includeContent) {
     var detail = "";
     if (isArrayBuffer(data)) {
@@ -139,40 +167,6 @@ export function createLogger(logger) {
     return new ConsoleLogger(logger);
 }
 /** @private */
-var Subject = /** @class */ (function () {
-    function Subject() {
-        this.observers = [];
-    }
-    Subject.prototype.next = function (item) {
-        for (var _i = 0, _a = this.observers; _i < _a.length; _i++) {
-            var observer = _a[_i];
-            observer.next(item);
-        }
-    };
-    Subject.prototype.error = function (err) {
-        for (var _i = 0, _a = this.observers; _i < _a.length; _i++) {
-            var observer = _a[_i];
-            if (observer.error) {
-                observer.error(err);
-            }
-        }
-    };
-    Subject.prototype.complete = function () {
-        for (var _i = 0, _a = this.observers; _i < _a.length; _i++) {
-            var observer = _a[_i];
-            if (observer.complete) {
-                observer.complete();
-            }
-        }
-    };
-    Subject.prototype.subscribe = function (observer) {
-        this.observers.push(observer);
-        return new SubjectSubscription(this, observer);
-    };
-    return Subject;
-}());
-export { Subject };
-/** @private */
 var SubjectSubscription = /** @class */ (function () {
     function SubjectSubscription(subject, observer) {
         this.subject = subject;
@@ -194,23 +188,24 @@ export { SubjectSubscription };
 var ConsoleLogger = /** @class */ (function () {
     function ConsoleLogger(minimumLogLevel) {
         this.minimumLogLevel = minimumLogLevel;
+        this.outputConsole = console;
     }
     ConsoleLogger.prototype.log = function (logLevel, message) {
         if (logLevel >= this.minimumLogLevel) {
             switch (logLevel) {
                 case LogLevel.Critical:
                 case LogLevel.Error:
-                    console.error("[" + new Date().toISOString() + "] " + LogLevel[logLevel] + ": " + message);
+                    this.outputConsole.error("[" + new Date().toISOString() + "] " + LogLevel[logLevel] + ": " + message);
                     break;
                 case LogLevel.Warning:
-                    console.warn("[" + new Date().toISOString() + "] " + LogLevel[logLevel] + ": " + message);
+                    this.outputConsole.warn("[" + new Date().toISOString() + "] " + LogLevel[logLevel] + ": " + message);
                     break;
                 case LogLevel.Information:
-                    console.info("[" + new Date().toISOString() + "] " + LogLevel[logLevel] + ": " + message);
+                    this.outputConsole.info("[" + new Date().toISOString() + "] " + LogLevel[logLevel] + ": " + message);
                     break;
                 default:
                     // console.debug only goes to attached debuggers in Node, so we use console.log for Trace and Debug
-                    console.log("[" + new Date().toISOString() + "] " + LogLevel[logLevel] + ": " + message);
+                    this.outputConsole.log("[" + new Date().toISOString() + "] " + LogLevel[logLevel] + ": " + message);
                     break;
             }
         }

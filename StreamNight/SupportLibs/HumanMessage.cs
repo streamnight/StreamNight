@@ -19,7 +19,7 @@ namespace StreamNight.SupportLibs
         }
 
         /// <summary>
-        /// Returns a HTML-formatted string with emotes set to images.
+        /// A HTML-formatted string with emotes set to images.
         /// </summary>
         public string HumanText
         {
@@ -35,15 +35,36 @@ namespace StreamNight.SupportLibs
 
         private string _HumanText { get; set; }
 
+        /// <summary>
+        /// Name of the sender at the time of message retrieval.
+        /// </summary>
         public string SenderDisplayName { get; private set; }
+        /// <summary>
+        /// Discord CDN URL of the sender's avatar.
+        /// </summary>
         public string SenderAvatarUrl { get; private set; }
 
+        /// <summary>
+        /// Emotes used in the message.
+        /// </summary>
         public List<RemoteEmote> Emotes { get; private set; }
+        /// <summary>
+        /// Channels mentioned in the message.
+        /// </summary>
         public List<RemoteChannel> Channels { get; private set; }
+        /// <summary>
+        /// Users mentioned in the message.
+        /// </summary>
         public List<RemoteUser> Users { get; private set; }
+        /// <summary>
+        /// Roles mentioned in the message.
+        /// </summary>
         public List<RemoteRole> Roles { get; private set; }
 
         private DiscordMessage _OriginalMessage { get; set; }
+        /// <summary>
+        /// Original Discord message. Creates humanised text when set.
+        /// </summary>
         public DiscordMessage OriginalMessage { get { return _OriginalMessage; } set
             {
                 _OriginalMessage = value;
@@ -57,6 +78,9 @@ namespace StreamNight.SupportLibs
                                                         .UseAutoLinks()
                                                         .Build();
 
+        /// <summary>
+        /// Creates a HTML version of the message text.
+        /// </summary>
         private void Humanise()
         {
             DiscordMessage message = this.OriginalMessage;
@@ -171,6 +195,11 @@ namespace StreamNight.SupportLibs
             this._HumanText = humanised;
         }
 
+        /// <summary>
+        /// Sanitises HTML by replacing some special characters.
+        /// </summary>
+        /// <param name="input">Unsanitised HTML text.</param>
+        /// <returns>Sanitised HTML string.</returns>
         private string SanitiseHtml(string input)
         {
             if (string.IsNullOrEmpty(input))
@@ -186,6 +215,11 @@ namespace StreamNight.SupportLibs
             return output;
         }
 
+        /// <summary>
+        /// Converts embeds to raw HTML.
+        /// </summary>
+        /// <param name="inputMessage">Discord message containing embed.</param>
+        /// <returns>HTML string with embed content.</returns>
         private string ConvertEmbeds(DiscordMessage inputMessage)
         {
             // TODO: Maybe consider looking into HtmlTags instead of manually writing HTML?
@@ -314,6 +348,9 @@ namespace StreamNight.SupportLibs
 
         public class RemoteEmote
         {
+            /// <summary>
+            /// Discord CDN URL of emote image.
+            /// </summary>
             public string Url
             {
                 get
@@ -321,7 +358,13 @@ namespace StreamNight.SupportLibs
                     return $"https://cdn.discordapp.com/emojis/{this.Id}";
                 }
             }
+            /// <summary>
+            /// Displayed name of the emote.
+            /// </summary>
             public string HumanName { get; set; }
+            /// <summary>
+            /// Discord ID of the emote.
+            /// </summary>
             public ulong Id { get; set; }
         }
 

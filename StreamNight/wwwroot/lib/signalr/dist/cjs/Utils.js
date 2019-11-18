@@ -58,6 +58,34 @@ var Arg = /** @class */ (function () {
 }());
 exports.Arg = Arg;
 /** @private */
+var Platform = /** @class */ (function () {
+    function Platform() {
+    }
+    Object.defineProperty(Platform, "isBrowser", {
+        get: function () {
+            return typeof window === "object";
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Platform, "isWebWorker", {
+        get: function () {
+            return typeof self === "object" && "importScripts" in self;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Platform, "isNode", {
+        get: function () {
+            return !this.isBrowser && !this.isWebWorker;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    return Platform;
+}());
+exports.Platform = Platform;
+/** @private */
 function getDataDetail(data, includeContent) {
     var detail = "";
     if (isArrayBuffer(data)) {
@@ -146,40 +174,6 @@ function createLogger(logger) {
 }
 exports.createLogger = createLogger;
 /** @private */
-var Subject = /** @class */ (function () {
-    function Subject() {
-        this.observers = [];
-    }
-    Subject.prototype.next = function (item) {
-        for (var _i = 0, _a = this.observers; _i < _a.length; _i++) {
-            var observer = _a[_i];
-            observer.next(item);
-        }
-    };
-    Subject.prototype.error = function (err) {
-        for (var _i = 0, _a = this.observers; _i < _a.length; _i++) {
-            var observer = _a[_i];
-            if (observer.error) {
-                observer.error(err);
-            }
-        }
-    };
-    Subject.prototype.complete = function () {
-        for (var _i = 0, _a = this.observers; _i < _a.length; _i++) {
-            var observer = _a[_i];
-            if (observer.complete) {
-                observer.complete();
-            }
-        }
-    };
-    Subject.prototype.subscribe = function (observer) {
-        this.observers.push(observer);
-        return new SubjectSubscription(this, observer);
-    };
-    return Subject;
-}());
-exports.Subject = Subject;
-/** @private */
 var SubjectSubscription = /** @class */ (function () {
     function SubjectSubscription(subject, observer) {
         this.subject = subject;
@@ -201,23 +195,24 @@ exports.SubjectSubscription = SubjectSubscription;
 var ConsoleLogger = /** @class */ (function () {
     function ConsoleLogger(minimumLogLevel) {
         this.minimumLogLevel = minimumLogLevel;
+        this.outputConsole = console;
     }
     ConsoleLogger.prototype.log = function (logLevel, message) {
         if (logLevel >= this.minimumLogLevel) {
             switch (logLevel) {
                 case ILogger_1.LogLevel.Critical:
                 case ILogger_1.LogLevel.Error:
-                    console.error("[" + new Date().toISOString() + "] " + ILogger_1.LogLevel[logLevel] + ": " + message);
+                    this.outputConsole.error("[" + new Date().toISOString() + "] " + ILogger_1.LogLevel[logLevel] + ": " + message);
                     break;
                 case ILogger_1.LogLevel.Warning:
-                    console.warn("[" + new Date().toISOString() + "] " + ILogger_1.LogLevel[logLevel] + ": " + message);
+                    this.outputConsole.warn("[" + new Date().toISOString() + "] " + ILogger_1.LogLevel[logLevel] + ": " + message);
                     break;
                 case ILogger_1.LogLevel.Information:
-                    console.info("[" + new Date().toISOString() + "] " + ILogger_1.LogLevel[logLevel] + ": " + message);
+                    this.outputConsole.info("[" + new Date().toISOString() + "] " + ILogger_1.LogLevel[logLevel] + ": " + message);
                     break;
                 default:
                     // console.debug only goes to attached debuggers in Node, so we use console.log for Trace and Debug
-                    console.log("[" + new Date().toISOString() + "] " + ILogger_1.LogLevel[logLevel] + ": " + message);
+                    this.outputConsole.log("[" + new Date().toISOString() + "] " + ILogger_1.LogLevel[logLevel] + ": " + message);
                     break;
             }
         }

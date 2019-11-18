@@ -11,9 +11,6 @@ namespace StreamNight.SupportLibs.Discord
         [JsonProperty("token")]
         public string Token { get; set; }
 
-        [JsonProperty("prefix")]
-        public string CommandPrefix { get; set; }
-
         [JsonProperty("guild")]
         public ulong GuildId { get; set; }
 
@@ -49,5 +46,11 @@ namespace StreamNight.SupportLibs.Discord
 
         [JsonProperty("admin_role")]
         public string AdminRole { get; set; }
+
+        [JsonProperty("enable_presence")]
+        public bool EnablePresence { get; set; }
+
+        [JsonProperty("presence_message")]
+        public string PresenceMessage { get; set; }
     }
 }

@@ -1,0 +1,37 @@
+﻿#twitch-control {
+    display: grid;
+    display: -ms-grid;
+
+    grid-column-gap: 1rem;
+    -ms-grid-column-gap: 1rem;
+
+    grid-template-columns: 1fr 1fr;
+    -ms-grid-columns: 1fr 1fr;
+    margin-top: 1rem;
+}
+
+#add-channel {
+    display: grid;
+    display: -ms-grid;
+
+    grid-column-gap: 1rem;
+    -ms-grid-column-gap: 1rem;
+
+    grid-template-columns: repeat(2, calc(50% - 0.5rem));
+    -ms-grid-columns: (calc(50% - 0.5rem))[2];
+}
+
+#add-channel label {
+    height: auto;
+    transform: none;
+    margin-left: auto;
+    align-self: center;
+}
+
+#add-channel button {
+    grid-column: 2;
+    -ms-grid-column: 2;
+
+    justify-self: end;
+    width: 8rem;
+}

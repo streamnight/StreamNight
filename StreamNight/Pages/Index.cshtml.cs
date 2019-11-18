@@ -31,6 +31,13 @@ namespace StreamNight.Pages
 
         public string StreamName { get; set; }
         public string ChannelName { get; set; }
+        public string ShortServerName { get; set; }
+		public string LogoPath { get; set; }
+
+        public bool TwitchEnabled;
+        public bool RedirectPlaylist;
+        public string RedirectTarget;
+        public List<string> TwitchChannels;
 
         private StreamMember _currentMember { get; set; }
 
@@ -39,6 +46,14 @@ namespace StreamNight.Pages
             _discordClient = discordBot.DiscordClient;
             StreamName = _discordClient.StreamName;
             ChannelName = _discordClient.StreamChannelName;
+            ShortServerName = _discordClient.ShortServerName;
+
+            TwitchEnabled = _discordClient.TwitchEnabled;
+            TwitchChannels = _discordClient.TwitchChannels;
+
+            RedirectPlaylist = _discordClient.RedirectPlaylist;
+            RedirectTarget = _discordClient.RedirectTarget;
+			LogoPath = _discordClient.LogoWebPath;
         }
 
         public async Task PopulateData()

@@ -1,11 +1,45 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
+import { DefaultReconnectPolicy } from "./DefaultReconnectPolicy";
 import { HttpConnection } from "./HttpConnection";
 import { HubConnection } from "./HubConnection";
+import { LogLevel } from "./ILogger";
 import { JsonHubProtocol } from "./JsonHubProtocol";
 import { NullLogger } from "./Loggers";
 import { Arg, ConsoleLogger } from "./Utils";
-/** A builder for configuring {@link @aspnet/signalr.HubConnection} instances. */
+// tslint:disable:object-literal-sort-keys
+var LogLevelNameMapping = {
+    trace: LogLevel.Trace,
+    debug: LogLevel.Debug,
+    info: LogLevel.Information,
+    information: LogLevel.Information,
+    warn: LogLevel.Warning,
+    warning: LogLevel.Warning,
+    error: LogLevel.Error,
+    critical: LogLevel.Critical,
+    none: LogLevel.None,
+};
+function parseLogLevel(name) {
+    // Case-insensitive matching via lower-casing
+    // Yes, I know case-folding is a complicated problem in Unicode, but we only support
+    // the ASCII strings defined in LogLevelNameMapping anyway, so it's fine -anurse.
+    var mapping = LogLevelNameMapping[name.toLowerCase()];
+    if (typeof mapping !== "undefined") {
+        return mapping;
+    }
+    else {
+        throw new Error("Unknown log level: " + name);
+    }
+}
+/** A builder for configuring {@link @microsoft/signalr.HubConnection} instances. */
 var HubConnectionBuilder = /** @class */ (function () {
     function HubConnectionBuilder() {
     }
@@ -13,6 +47,10 @@ var HubConnectionBuilder = /** @class */ (function () {
         Arg.isRequired(logging, "logging");
         if (isLogger(logging)) {
             this.logger = logging;
+        }
+        else if (typeof logging === "string") {
+            var logLevel = parseLogLevel(logging);
+            this.logger = new ConsoleLogger(logLevel);
         }
         else {
             this.logger = new ConsoleLogger(logging);
@@ -25,27 +63,40 @@ var HubConnectionBuilder = /** @class */ (function () {
         // Flow-typing knows where it's at. Since HttpTransportType is a number and IHttpConnectionOptions is guaranteed
         // to be an object, we know (as does TypeScript) this comparison is all we need to figure out which overload was called.
         if (typeof transportTypeOrOptions === "object") {
-            this.httpConnectionOptions = transportTypeOrOptions;
+            this.httpConnectionOptions = __assign({}, this.httpConnectionOptions, transportTypeOrOptions);
         }
         else {
-            this.httpConnectionOptions = {
-                transport: transportTypeOrOptions,
-            };
+            this.httpConnectionOptions = __assign({}, this.httpConnectionOptions, { transport: transportTypeOrOptions });
         }
         return this;
     };
-    /** Configures the {@link @aspnet/signalr.HubConnection} to use the specified Hub Protocol.
+    /** Configures the {@link @microsoft/signalr.HubConnection} to use the specified Hub Protocol.
      *
-     * @param {IHubProtocol} protocol The {@link @aspnet/signalr.IHubProtocol} implementation to use.
+     * @param {IHubProtocol} protocol The {@link @microsoft/signalr.IHubProtocol} implementation to use.
      */
     HubConnectionBuilder.prototype.withHubProtocol = function (protocol) {
         Arg.isRequired(protocol, "protocol");
         this.protocol = protocol;
         return this;
     };
-    /** Creates a {@link @aspnet/signalr.HubConnection} from the configuration options specified in this builder.
+    HubConnectionBuilder.prototype.withAutomaticReconnect = function (retryDelaysOrReconnectPolicy) {
+        if (this.reconnectPolicy) {
+            throw new Error("A reconnectPolicy has already been set.");
+        }
+        if (!retryDelaysOrReconnectPolicy) {
+            this.reconnectPolicy = new DefaultReconnectPolicy();
+        }
+        else if (Array.isArray(retryDelaysOrReconnectPolicy)) {
+            this.reconnectPolicy = new DefaultReconnectPolicy(retryDelaysOrReconnectPolicy);
+        }
+        else {
+            this.reconnectPolicy = retryDelaysOrReconnectPolicy;
+        }
+        return this;
+    };
+    /** Creates a {@link @microsoft/signalr.HubConnection} from the configuration options specified in this builder.
      *
-     * @returns {HubConnection} The configured {@link @aspnet/signalr.HubConnection}.
+     * @returns {HubConnection} The configured {@link @microsoft/signalr.HubConnection}.
      */
     HubConnectionBuilder.prototype.build = function () {
         // If httpConnectionOptions has a logger, use it. Otherwise, override it with the one
@@ -61,7 +112,7 @@ var HubConnectionBuilder = /** @class */ (function () {
             throw new Error("The 'HubConnectionBuilder.withUrl' method must be called before building the connection.");
         }
         var connection = new HttpConnection(this.url, httpConnectionOptions);
-        return HubConnection.create(connection, this.logger || NullLogger.instance, this.protocol || new JsonHubProtocol());
+        return HubConnection.create(connection, this.logger || NullLogger.instance, this.protocol || new JsonHubProtocol(), this.reconnectPolicy);
     };
     return HubConnectionBuilder;
 }());

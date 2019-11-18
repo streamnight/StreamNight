@@ -1,10 +1,17 @@
 import { HttpClient } from "./HttpClient";
 import { ILogger, LogLevel } from "./ILogger";
-import { IStreamResult, IStreamSubscriber, ISubscription } from "./Stream";
+import { IStreamSubscriber, ISubscription } from "./Stream";
+import { Subject } from "./Subject";
 /** @private */
 export declare class Arg {
     static isRequired(val: any, name: string): void;
     static isIn(val: any, values: any, name: string): void;
+}
+/** @private */
+export declare class Platform {
+    static readonly isBrowser: boolean;
+    static readonly isWebWorker: boolean;
+    static readonly isNode: boolean;
 }
 /** @private */
 export declare function getDataDetail(data: any, includeContent: boolean): string;
@@ -17,16 +24,6 @@ export declare function sendMessage(logger: ILogger, transportName: string, http
 /** @private */
 export declare function createLogger(logger?: ILogger | LogLevel): ILogger;
 /** @private */
-export declare class Subject<T> implements IStreamResult<T> {
-    observers: Array<IStreamSubscriber<T>>;
-    cancelCallback?: () => Promise<void>;
-    constructor();
-    next(item: T): void;
-    error(err: any): void;
-    complete(): void;
-    subscribe(observer: IStreamSubscriber<T>): ISubscription<T>;
-}
-/** @private */
 export declare class SubjectSubscription<T> implements ISubscription<T> {
     private subject;
     private observer;
@@ -36,6 +33,12 @@ export declare class SubjectSubscription<T> implements ISubscription<T> {
 /** @private */
 export declare class ConsoleLogger implements ILogger {
     private readonly minimumLogLevel;
+    outputConsole: {
+        error(message: any): void;
+        warn(message: any): void;
+        info(message: any): void;
+        log(message: any): void;
+    };
     constructor(minimumLogLevel: LogLevel);
     log(logLevel: LogLevel, message: string): void;
 }

@@ -16,6 +16,12 @@ namespace StreamNight.SupportLibs
         // This constant determines the number of iterations for the password bytes generation function.
         private const int DerivationIterations = 1000;
 
+        /// <summary>
+        /// Encrypts a given plaintext using 128-bit AES-CBC with PKCS7 padding.
+        /// </summary>
+        /// <param name="plainText">The plaintext string to encrypt.</param>
+        /// <param name="passPhrase">The key to encrypt the plaintext with.</param>
+        /// <returns>The encrypted string</returns>
         public static string Encrypt(string plainText, string passPhrase)
         {
             // Salt and IV is randomly generated each time, but is preprended to encrypted cipher text
@@ -53,6 +59,12 @@ namespace StreamNight.SupportLibs
             }
         }
 
+        /// <summary>
+        /// Decrypts text encrypted using 128-bit AES-CBC with PKCS7 padding.
+        /// </summary>
+        /// <param name="cipherText">The encrypted text.</param>
+        /// <param name="passPhrase">The key used to encrypt the message.</param>
+        /// <returns></returns>
         public static string Decrypt(string cipherText, string passPhrase)
         {
             cipherText = cipherText.Replace(' ', '+');
@@ -92,6 +104,10 @@ namespace StreamNight.SupportLibs
             }
         }
 
+        /// <summary>
+        /// Securely generates 128 bits of randomness.
+        /// </summary>
+        /// <returns>A byte array containing 128 bits of random data.</returns>
         private static byte[] Generate128BitsOfRandomEntropy()
         {
             var randomBytes = new byte[16]; // 16 Bytes will give us 128 bits.

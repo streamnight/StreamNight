@@ -25,14 +25,20 @@ namespace StreamNight.Controllers
             _discordClient = _discordBot.DiscordClient;
         }
 
+        /// <summary>
+        /// Returns JSON object containing server custom emotes for Emoji Mart.
+        /// </summary>
+        /// <returns>JSON object containing custom emotes for Emoji Mart.</returns>
         [HttpGet]
         public async Task<ActionResult<string>> GetEmoji()
         {
+            // Can't get emotes if the Discord client isn't ready, so fail early instead.
             if (!_discordClient.Ready)
             {
                 throw new ApplicationException("The Discord client isn't ready.");
             }
 
+            // This function returns JSON so it's safe to pass directly to the client.
             return await _discordBot.DiscordClient.GetEmojiForEmojiMartAsync();
         }
     }

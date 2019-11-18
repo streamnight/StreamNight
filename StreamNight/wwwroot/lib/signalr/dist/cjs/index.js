@@ -4,7 +4,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 // Version token that will be replaced by the prepack command
 /** The version of the SignalR client. */
-exports.VERSION = "1.1.4";
+exports.VERSION = "3.0.0";
 var Errors_1 = require("./Errors");
 exports.AbortError = Errors_1.AbortError;
 exports.HttpError = Errors_1.HttpError;
@@ -30,4 +30,6 @@ var Loggers_1 = require("./Loggers");
 exports.NullLogger = Loggers_1.NullLogger;
 var JsonHubProtocol_1 = require("./JsonHubProtocol");
 exports.JsonHubProtocol = JsonHubProtocol_1.JsonHubProtocol;
+var Subject_1 = require("./Subject");
+exports.Subject = Subject_1.Subject;
 //# sourceMappingURL=index.js.map

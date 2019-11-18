@@ -13,7 +13,7 @@ var __extends = (this && this.__extends) || (function () {
 /** Error thrown when an HTTP request fails. */
 var HttpError = /** @class */ (function (_super) {
     __extends(HttpError, _super);
-    /** Constructs a new instance of {@link @aspnet/signalr.HttpError}.
+    /** Constructs a new instance of {@link @microsoft/signalr.HttpError}.
      *
      * @param {string} errorMessage A descriptive error message.
      * @param {number} statusCode The HTTP status code represented by this error.
@@ -35,7 +35,7 @@ export { HttpError };
 /** Error thrown when a timeout elapses. */
 var TimeoutError = /** @class */ (function (_super) {
     __extends(TimeoutError, _super);
-    /** Constructs a new instance of {@link @aspnet/signalr.TimeoutError}.
+    /** Constructs a new instance of {@link @microsoft/signalr.TimeoutError}.
      *
      * @param {string} errorMessage A descriptive error message.
      */

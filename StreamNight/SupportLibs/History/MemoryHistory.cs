@@ -76,6 +76,10 @@ namespace StreamNight.SupportLibs.History
             return newMessages;
         }
 
+        /// <summary>
+        /// Returns the raw message list.
+        /// </summary>
+        /// <returns>The raw message list used by the message store.</returns>
         public List<DiscordMessage> GetRawList()
         {
             return MessageList;

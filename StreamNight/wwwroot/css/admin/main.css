@@ -40,11 +40,11 @@ form {
     -ms-grid-columns: (1fr)[2];
 }
 
-    form > *, #bot-control button {
+    form > *, button {
         margin: 0.5rem 0;
     }
 
-    form input, #bot-control button {
+    form input, button, select {
         padding: 0.5em 0.6em;
         display: inline-block;
         border: 1px solid #555;
@@ -59,7 +59,7 @@ form {
         font-size: inherit;
     }
 
-    form > input, #bot-control button {
+    form > input, button {
         width: 100%;
     }
 

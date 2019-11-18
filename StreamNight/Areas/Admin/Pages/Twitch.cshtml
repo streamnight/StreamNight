@@ -1,0 +1,37 @@
+﻿@page
+@model StreamNight.Areas.Admin.Pages.TwitchModel
+@{
+    Layout = "_Layout";
+    ViewBag.Title = "Twitch Settings";
+}
+    <section>
+        <link rel="stylesheet" href="~/css/admin/twitch.css">
+        <h1>Twitch Status</h1>
+        <p>This page displays the current Twitch channels.</p>
+
+        <p id="connection-status">Data may be outdated. Attempting to reconnect to the status page...</p>
+        <p id="connection-attempts">Connection attempts: 1</p>
+
+        <table id="status-table">
+            <thead>
+                <tr>
+                    <th>Channel Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div id="twitch-control">
+            <button onclick="disableTwitch()">Disable Twitch</button>
+            <button onclick="enableTwitch()">Enable Twitch</button>
+        </div>
+
+        <form id="add-channel">
+            <label for="new-channel-name">Twitch channel name: </label>
+            <input type="text" id="new-channel-name" name="new-channel-name" />
+            <button type="button" onclick="addChannel()">Add Channel</button>
+        </form>
+        <script src="~/lib/signalr/dist/browser/signalr.min.js"></script>
+        <script src="~/js/admin/twitch.js"></script>
+    </section>

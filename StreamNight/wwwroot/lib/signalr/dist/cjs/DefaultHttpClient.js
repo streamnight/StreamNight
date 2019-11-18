@@ -16,10 +16,10 @@ var Errors_1 = require("./Errors");
 var HttpClient_1 = require("./HttpClient");
 var NodeHttpClient_1 = require("./NodeHttpClient");
 var XhrHttpClient_1 = require("./XhrHttpClient");
-/** Default implementation of {@link @aspnet/signalr.HttpClient}. */
+/** Default implementation of {@link @microsoft/signalr.HttpClient}. */
 var DefaultHttpClient = /** @class */ (function (_super) {
     __extends(DefaultHttpClient, _super);
-    /** Creates a new instance of the {@link @aspnet/signalr.DefaultHttpClient}, using the provided {@link @aspnet/signalr.ILogger} to log messages. */
+    /** Creates a new instance of the {@link @microsoft/signalr.DefaultHttpClient}, using the provided {@link @microsoft/signalr.ILogger} to log messages. */
     function DefaultHttpClient(logger) {
         var _this = _super.call(this) || this;
         if (typeof XMLHttpRequest !== "undefined") {

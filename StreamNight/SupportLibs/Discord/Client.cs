@@ -18,6 +18,8 @@ using StreamNight.SupportLibs.Status;
 
 namespace StreamNight.SupportLibs.Discord
 {
+    // TODO: Split this into multiple classes.
+    // A huge list of fields like this is really ugly.
     public class Client
     {
         private CancellationTokenSource stopClientTokenSource;
@@ -28,50 +30,114 @@ namespace StreamNight.SupportLibs.Discord
         /// <summary>
         /// The message storage location that is used to send historical messages to connecting clients.
         /// </summary>
-        public IHistoryStore historyStore;
+        public IHistoryStore HistoryStore { get; set; }
 
         // Putting this here to mimic singleton behaviour.
         /// <summary>
         /// The SystemStatus object tracking this client. Null until the status page is accessed.
         /// </summary>
-        public SystemStatus SystemStatus = null;
+        public SystemStatus SystemStatus { get; set; } = null;
 
-        internal MessageHandler messageHandler;
+        internal MessageHandler MessageHandler { get; set; }
+
+        /// <summary>
+        /// Signals whether playlist requests should be sent to another source.
+        /// </summary>
+        public bool RedirectPlaylist { get; set; } = false;
+        /// <summary>
+        /// The redirect target location.
+        /// </summary>
+        public string RedirectTarget { get; set; } = null;
 
         /// <summary>
         /// Signals whether the stream is up.
         /// </summary>
-        public bool StreamUp = false;
+        public bool StreamUp { get; set; } = false;
         /// <summary>
         /// Signals whether the Discord client is running.
         /// </summary>
-        public bool Running = false;
+        public bool Running { get; set; } = false;
         /// <summary>
         /// Signals whether the Discord client has successfully connected to the guild.
         /// </summary>
-        public bool Ready = false;
+        public bool Ready { get; set; } = false;
         /// <summary>
         /// Signals whether the webhook's channel matches the channel ID set in the config.
         /// </summary>
-        public bool WebhookChannelMatch = false;
-        public bool UseServerLogo = false;
-        private ulong GuildId = 0;
-        private ulong ChannelId = 0;
-        private string ClientName;
+        public bool WebhookChannelMatch { get; set; } = false;
+        /// <summary>
+        /// Signals whether the server logo should be displayed in the mobile header instead of the static logo.
+        /// </summary>
+        public bool UseServerLogo { get; set; } = false;
+        private ulong GuildId { get; set; } = 0;
+        private ulong ChannelId { get; set; } = 0;
+        private string ClientName { get; set; } = null;
 
-        private string ShortServerName;
+        /// <summary>
+        /// A one word version of the server name used for emoji and the stream tab name.
+        /// </summary>
+        public string ShortServerName { get; set; } = null;
 
         /// <summary>
         /// The string used to generate the ASP.NET page titles.
         /// </summary>
-        public string StreamName;
+        public string StreamName { get; set; } = null;
         /// <summary>
         /// The stream channel's Discord name.
         /// </summary>
-        public string StreamChannelName;
+        public string StreamChannelName { get; set; } = null;
 
-        public string StreamRole;
-        public string AdminRole;
+        public string StreamRole { get; set; } = null;
+        public string AdminRole { get; set; } = null;
+
+        // Twitch section
+        /// <summary>
+        /// Signals whether Twitch integration is enabled.
+        /// </summary>
+        public bool TwitchEnabled { get; set; } = false;
+        /// <summary>
+        /// The list of Twitch channels displayed on the stream website.
+        /// </summary>
+        public List<string> TwitchChannels { get; set; } = new List<string>();
+        // Presence Section
+        public bool EnablePresence
+        {
+            get
+            {
+                try
+                {
+                    return !string.IsNullOrWhiteSpace(discordClient.CurrentUser.Presence.Activity.Name);
+                }
+                catch (NullReferenceException)
+                {
+                    return false;
+                }
+            }
+        }
+        public string PresenceMessage { get; set; } = null;
+        public PresenceData CurrentPresence { get
+            {
+                try
+                {
+                    return new PresenceData
+                    {
+                        PresenceEnabled = this.EnablePresence,
+                        PresenceMessage = this.discordClient.CurrentUser.Presence.Activity.Name,
+                        ActivityType = this.discordClient.CurrentUser.Presence.Activity.ActivityType,
+                        TwitchUrl = this.discordClient.CurrentUser.Presence.Activity.StreamUrl
+                    };
+                }
+                catch (NullReferenceException)
+                {
+                    return new PresenceData
+                    {
+                        PresenceEnabled = false,
+                        PresenceMessage = null,
+                        ActivityType = ActivityType.Playing,
+                        TwitchUrl = null
+                    };
+                }
+            } }
 
         public string LogoWebPath
         {
@@ -82,7 +148,6 @@ namespace StreamNight.SupportLibs.Discord
                     if (this.Ready && (DateTime.UtcNow - LastLogoRefresh).TotalMinutes > 60.0)
                     {
                         _ = this.DownloadGuildLogo();
-                        LastLogoRefresh = DateTimeOffset.UtcNow;
                     }
                     return _LogoWebPath;
                 }
@@ -93,11 +158,11 @@ namespace StreamNight.SupportLibs.Discord
             }
         }
         private string _LogoWebPath = "/images/staticlogo.png";
-        private DateTimeOffset LastLogoRefresh = DateTimeOffset.UnixEpoch;
+        private DateTimeOffset LastLogoRefresh { get; set; } = DateTimeOffset.UnixEpoch;
 
         public Client(IHistoryStore historyStore)
         {
-            this.historyStore = historyStore;
+            this.HistoryStore = historyStore;
         }
 
         /// <summary>
@@ -135,7 +200,7 @@ namespace StreamNight.SupportLibs.Discord
                 UseInternalLogHandler = true
             };
 
-            messageHandler = new MessageHandler(new MessageHandlerConfig
+            MessageHandler = new MessageHandler(new MessageHandlerConfig
             {
                 ApiUrl = this.botConfig.ApiUrl,
                 ChannelId = this.botConfig.ChannelId,
@@ -161,10 +226,10 @@ namespace StreamNight.SupportLibs.Discord
 
             this.discordClient.ChannelUpdated += this.Client_ChannelUpdated;
 
-            this.discordClient.MessageCreated += messageHandler.Created;
-            this.discordClient.MessageUpdated += messageHandler.Edited;
-            this.discordClient.MessageDeleted += messageHandler.Deleted;
-            this.discordClient.TypingStarted += messageHandler.Typing;
+            this.discordClient.MessageCreated += MessageHandler.Created;
+            this.discordClient.MessageUpdated += MessageHandler.Edited;
+            this.discordClient.MessageDeleted += MessageHandler.Deleted;
+            this.discordClient.TypingStarted += MessageHandler.Typing;
 
             webhookClient = new DiscordWebhookClient();
             await webhookClient.AddWebhookAsync(WebhookUri);
@@ -194,10 +259,17 @@ namespace StreamNight.SupportLibs.Discord
             }
         }
 
-        private Task Client_Ready(ReadyEventArgs e)
+        private async Task Client_Ready(ReadyEventArgs e)
         {
             e.Client.DebugLogger.LogMessage(LogLevel.Info, "WebChat", "Client is ready to process events.", DateTime.Now);
-            return Task.CompletedTask;
+
+            await this.SetPresence(new PresenceData
+            {
+                PresenceEnabled = this.botConfig.EnablePresence,
+                PresenceMessage = this.botConfig.PresenceMessage
+            });
+
+            e.Client.DebugLogger.LogMessage(LogLevel.Info, "WebChat", "Updated presence from configuration.", DateTime.Now);
         }
 
         private Task Client_GuildAvailable(GuildCreateEventArgs e)
@@ -434,36 +506,71 @@ namespace StreamNight.SupportLibs.Discord
                 return;
             }
             bool logoDownloadSuccess = false;
-            HttpClient httpClient = new HttpClient();
-            DiscordChannel chatChannel = await this.discordClient.GetChannelAsync(this.ChannelId);
-            _LogoWebPath = $"/images/logo.{chatChannel.Guild.IconUrl.Split('.').Last()}";
-            string LogoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", _LogoWebPath.Replace('/', Path.DirectorySeparatorChar));
-            int i = 0;
-            do
+            using (HttpClient httpClient = new HttpClient())
             {
-                HttpResponseMessage logoResponse = await httpClient.GetAsync(chatChannel.Guild.IconUrl);
-
-                if (logoResponse.IsSuccessStatusCode)
+                DiscordChannel chatChannel = await this.discordClient.GetChannelAsync(this.ChannelId);
+                _LogoWebPath = $"/images/logo.{chatChannel.Guild.IconUrl.Split('.').Last()}";
+                string currentDir = Directory.GetCurrentDirectory();
+                string LogoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", _LogoWebPath.Remove(0, 1).Replace('/', Path.DirectorySeparatorChar));
+                int i = 0;
+                do
                 {
-                    using (FileStream fs1 = new FileStream(LogoPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, bufferSize: 4096, useAsync: true))
+                    using (HttpResponseMessage logoResponse = await httpClient.GetAsync(chatChannel.Guild.IconUrl))
                     {
-                        await (await logoResponse.Content.ReadAsStreamAsync()).CopyToAsync(fs1);
-                        await fs1.FlushAsync();
+                        if (logoResponse.IsSuccessStatusCode)
+                        {
+                            using (FileStream fs1 = new FileStream(LogoPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, bufferSize: 4096, useAsync: true))
+                            {
+                                await (await logoResponse.Content.ReadAsStreamAsync()).CopyToAsync(fs1);
+                                await fs1.FlushAsync();
+                            }
+                            logoDownloadSuccess = true;
+                            LastLogoRefresh = DateTimeOffset.UtcNow;
+                            break;
+                        }
                     }
-                    logoResponse.Dispose();
-                    logoDownloadSuccess = true;
-                }
-                else
-                {
-                    logoResponse.Dispose();
-                }
-                i++;
-                System.Threading.Thread.Sleep(5000);
-                if (i > 5)
-                {
-                    throw new FileLoadException("Could not download guild logo.");
-                }
-            } while (!logoDownloadSuccess);
+                    i++;
+                    Thread.Sleep(5000);
+                    if (i > 5)
+                    {
+                        throw new FileLoadException("Could not download guild logo.");
+                    }
+                } while (!logoDownloadSuccess);
+            }
         }
+
+        /// <summary>
+        /// Sets the Discord presence held by the bot.
+        /// </summary>
+        /// <param name="presenceData">The presence data to use.</param>
+        /// <returns>A Task representing the state of the request.</returns>
+        public async Task SetPresence(PresenceData presenceData)
+        {
+            DiscordActivity discordActivity;
+
+            if (presenceData.PresenceEnabled)
+            {
+                discordActivity = new DiscordActivity(presenceData.PresenceMessage, presenceData.ActivityType);
+
+                if (presenceData.ActivityType == ActivityType.Streaming)
+                {
+                    discordActivity.StreamUrl = presenceData.TwitchUrl;
+                }
+            }
+            else
+            {
+                discordActivity = new DiscordActivity();
+            }
+
+            await discordClient.UpdateStatusAsync(discordActivity);
+        }
+    }
+
+    public class PresenceData
+    {
+        public bool PresenceEnabled { get; set; } = false;
+        public string PresenceMessage { get; set; } = string.Empty;
+        public ActivityType ActivityType { get; set; } = ActivityType.Playing;
+        public string TwitchUrl { get; set; } = string.Empty;
     }
 }

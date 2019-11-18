@@ -6,6 +6,57 @@ Releases are currently referred to by date as the project is under heavy develop
 
 **This document follows the ISO 8601 date format.**
 
+## 2019-11-18
+
+### Bug Fixes
+
+* Fixed online stream status image exceeding player boundaries
+* Fixed automatic quality text updating when manually changing quality
+* Fixed labels appearing on top of menu on mobile devices
+* Fixed the value of a manually selected quality incorrectly changing upon loading
+* Fixed viewport exceeding screen boundaries on some mobile browsers
+* Fixed mobile header icon not downloading correctly
+
+### Improvements
+
+* Changed bot control buttons to red to warn administrators of a potentially dangerous action
+* Changed Discord client's public fields to properties
+* Status checks now use reflection instead of hardcoding properties
+* Updated chat styling to match latest Discord desktop release
+* Increased size and margins of chat toggle
+* Added new styling for mobile devices with a soft keyboard open
+* Upgraded to .NET Core 3.0
+* Fixed some inconsistent paddings and border radiuses
+* Fixed new lines in chat entry
+
+### New Features
+
+* Added optional Twitch integration
+* Added Discord presence configuration
+* Added playlist redirection
+* Added debug panel
+* Website now serves mobile header logo as favicon
+* Added playlist redirection
+* Added debug panel
+
+### Miscellaneous
+
+* Removed unused configuration property
+* Added static analysis to build process
+* Updated internal documentation
+* Removed dependency on Discord.OAuth2
+
+*Forked from development commit 91702d5da615f7e9fac06bd6ec3f67f2ff9e3160 on 2019-11-18*
+
+## 2019-08-18
+
+This release changes the license used for the documentation to allow for per-file licenses. It's currently only used for the media server draft.
+
+### Miscellaneous
+
+* Added media server documentation
+* Updated documentation license
+
 ## 2019-08-11
 
 This release adds mandatory configuration options. See `INSTALL.MD` for more information.
@@ -23,7 +74,6 @@ This release adds mandatory configuration options. See `INSTALL.MD` for more inf
 * Fixed emoji picker clipping
 * Fixed Discord logins not working after registering with a bot link
 * Fixed styling of dismissible alerts
-
 
 ### Improvements
 

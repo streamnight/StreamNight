@@ -64,7 +64,7 @@ namespace StreamNight.SupportLibs.Discord
                 }
 
                 // Add to history
-                config.Client.historyStore.AddMessage(messageEvent.Message);
+                config.Client.HistoryStore.AddMessage(messageEvent.Message);
             }
 
             await commands.ProcessCommand(messageEvent);
@@ -90,7 +90,7 @@ namespace StreamNight.SupportLibs.Discord
                 }
 
                 // Edit history
-                config.Client.historyStore.EditMessage(messageEvent.Message);
+                config.Client.HistoryStore.EditMessage(messageEvent.Message);
             }
         }
 
@@ -114,7 +114,7 @@ namespace StreamNight.SupportLibs.Discord
                 }
 
                 // Delete from history
-                config.Client.historyStore.RemoveMessage(messageEvent.Message);
+                config.Client.HistoryStore.RemoveMessage(messageEvent.Message);
             }
         }
 

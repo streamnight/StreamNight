@@ -1,0 +1,61 @@
+﻿@page
+@model StreamNight.Areas.Admin.Pages.PresenceModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@addTagHelper *, AuthoringTagHelpers
+@{
+    Layout = "_Layout";
+    ViewBag.Title = "Streambot Presence";
+}
+
+<section>
+    <link rel="stylesheet" href="~/css/admin/status.css">
+
+    @if (ViewData["ResultMessage"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            <p>
+                <strong>@ViewData["ResultMessage"]</strong>
+            </p>
+        </div>
+    }
+
+    <h1>Streambot Presence</h1>
+    <p>This page lets you edit the streambot's presence data.</p>
+
+    <form asp-action="UpdatePresenceAsync" id="presenceForm" name="setPresence" method="post">
+        <label for="PresenceData_PresenceEnabled">Presence Enabled</label>
+        <div id="checkbox">
+            <input type="checkbox" asp-for="PresenceData.PresenceEnabled" checked="@Model.DiscordClient.CurrentPresence.PresenceEnabled" />
+        </div>
+
+        <label for="PresenceData_ActivityType">Activity Type</label>
+        <select asp-for="PresenceData.ActivityType" asp-items="Html.GetEnumSelectList(typeof(DSharpPlus.Entities.ActivityType))" onchange="hideActivityOptions()"></select>
+
+        <label for="PresenceData_PresenceMessage">Presence Message</label>
+        <input type="text" asp-for="PresenceData.PresenceMessage" value="@Model.DiscordClient.CurrentPresence.PresenceMessage" />
+
+        <label class="twitch-options @if (Model.DiscordClient.CurrentPresence.ActivityType != DSharpPlus.Entities.ActivityType.Streaming) { <text>hidden</text> }" for="PresenceData_TwitchUrl">Twitch URL</label>
+        <input class="twitch-options @if (Model.DiscordClient.CurrentPresence.ActivityType != DSharpPlus.Entities.ActivityType.Streaming) { <text>hidden</text> }" type="text" asp-for="PresenceData.TwitchUrl" value="@Model.DiscordClient.CurrentPresence.TwitchUrl" />
+
+        <button type="reset">Reset Form</button>
+        <button type="submit">Update Presence</button>
+    </form>
+
+    <script>
+        var activitySelect = document.getElementById("PresenceData_ActivityType");
+        var twitchOptions = Array.from(document.getElementsByClassName("twitch-options"));
+
+        function hideActivityOptions() {
+            if (activitySelect.selectedOptions[0].innerText == "Streaming") {
+                twitchOptions.forEach(function (element) {
+                    element.classList.remove("hidden");
+                });
+            }
+            else {
+                twitchOptions.forEach(function (element) {
+                    element.classList.add("hidden");
+                });
+            }
+        }
+    </script>
+</section>

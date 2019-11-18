@@ -37,7 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 import { LogLevel } from "./ILogger";
 import { TransferFormat } from "./ITransport";
-import { Arg, getDataDetail, sendMessage } from "./Utils";
+import { Arg, getDataDetail, Platform, sendMessage } from "./Utils";
 /** @private */
 var ServerSentEventsTransport = /** @class */ (function () {
     function ServerSentEventsTransport(httpClient, accessTokenFactory, logger, logMessageContent, eventSourceConstructor) {
@@ -77,7 +77,7 @@ var ServerSentEventsTransport = /** @class */ (function () {
                                 return;
                             }
                             var eventSource;
-                            if (typeof window !== "undefined") {
+                            if (Platform.isBrowser || Platform.isWebWorker) {
                                 eventSource = new _this.eventSourceConstructor(url, { withCredentials: true });
                             }
                             else {

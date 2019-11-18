@@ -38,20 +38,27 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 import { HandshakeProtocol } from "./HandshakeProtocol";
 import { MessageType } from "./IHubProtocol";
 import { LogLevel } from "./ILogger";
-import { Arg, Subject } from "./Utils";
+import { Subject } from "./Subject";
+import { Arg } from "./Utils";
 var DEFAULT_TIMEOUT_IN_MS = 30 * 1000;
 var DEFAULT_PING_INTERVAL_IN_MS = 15 * 1000;
 /** Describes the current state of the {@link HubConnection} to the server. */
 export var HubConnectionState;
 (function (HubConnectionState) {
     /** The hub connection is disconnected. */
-    HubConnectionState[HubConnectionState["Disconnected"] = 0] = "Disconnected";
+    HubConnectionState["Disconnected"] = "Disconnected";
+    /** The hub connection is connecting. */
+    HubConnectionState["Connecting"] = "Connecting";
     /** The hub connection is connected. */
-    HubConnectionState[HubConnectionState["Connected"] = 1] = "Connected";
+    HubConnectionState["Connected"] = "Connected";
+    /** The hub connection is disconnecting. */
+    HubConnectionState["Disconnecting"] = "Disconnecting";
+    /** The hub connection is reconnecting. */
+    HubConnectionState["Reconnecting"] = "Reconnecting";
 })(HubConnectionState || (HubConnectionState = {}));
 /** Represents a connection to a SignalR Hub. */
 var HubConnection = /** @class */ (function () {
-    function HubConnection(connection, logger, protocol) {
+    function HubConnection(connection, logger, protocol, reconnectPolicy) {
         var _this = this;
         Arg.isRequired(connection, "connection");
         Arg.isRequired(logger, "logger");
@@ -61,15 +68,19 @@ var HubConnection = /** @class */ (function () {
         this.logger = logger;
         this.protocol = protocol;
         this.connection = connection;
+        this.reconnectPolicy = reconnectPolicy;
         this.handshakeProtocol = new HandshakeProtocol();
         this.connection.onreceive = function (data) { return _this.processIncomingData(data); };
         this.connection.onclose = function (error) { return _this.connectionClosed(error); };
         this.callbacks = {};
         this.methods = {};
         this.closedCallbacks = [];
-        this.id = 0;
+        this.reconnectingCallbacks = [];
+        this.reconnectedCallbacks = [];
+        this.invocationId = 0;
         this.receivedHandshakeResponse = false;
         this.connectionState = HubConnectionState.Disconnected;
+        this.connectionStarted = false;
         this.cachedPingMessage = this.protocol.writeMessage({ type: MessageType.Ping });
     }
     /** @internal */
@@ -77,8 +88,8 @@ var HubConnection = /** @class */ (function () {
     // create method that can be used by HubConnectionBuilder. An "internal" constructor would just
     // be stripped away and the '.d.ts' file would have no constructor, which is interpreted as a
     // public parameter-less constructor.
-    HubConnection.create = function (connection, logger, protocol) {
-        return new HubConnection(connection, logger, protocol);
+    HubConnection.create = function (connection, logger, protocol, reconnectPolicy) {
+        return new HubConnection(connection, logger, protocol, reconnectPolicy);
     };
     Object.defineProperty(HubConnection.prototype, "state", {
         /** Indicates the state of the {@link HubConnection} to the server. */
@@ -88,22 +99,85 @@ var HubConnection = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(HubConnection.prototype, "connectionId", {
+        /** Represents the connection id of the {@link HubConnection} on the server. The connection id will be null when the connection is either
+         *  in the disconnected state or if the negotiation step was skipped.
+         */
+        get: function () {
+            return this.connection ? (this.connection.connectionId || null) : null;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(HubConnection.prototype, "baseUrl", {
+        /** Indicates the url of the {@link HubConnection} to the server. */
+        get: function () {
+            return this.connection.baseUrl || "";
+        },
+        /**
+         * Sets a new url for the HubConnection. Note that the url can only be changed when the connection is in either the Disconnected or
+         * Reconnecting states.
+         * @param {string} url The url to connect to.
+         */
+        set: function (url) {
+            if (this.connectionState !== HubConnectionState.Disconnected && this.connectionState !== HubConnectionState.Reconnecting) {
+                throw new Error("The HubConnection must be in the Disconnected or Reconnecting state to change the url.");
+            }
+            if (!url) {
+                throw new Error("The HubConnection url must be a valid url.");
+            }
+            this.connection.baseUrl = url;
+        },
+        enumerable: true,
+        configurable: true
+    });
     /** Starts the connection.
      *
      * @returns {Promise<void>} A Promise that resolves when the connection has been successfully established, or rejects with an error.
      */
     HubConnection.prototype.start = function () {
+        this.startPromise = this.startWithStateTransitions();
+        return this.startPromise;
+    };
+    HubConnection.prototype.startWithStateTransitions = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var handshakeRequest, handshakePromise;
+            var e_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (this.connectionState !== HubConnectionState.Disconnected) {
+                            return [2 /*return*/, Promise.reject(new Error("Cannot start a HubConnection that is not in the 'Disconnected' state."))];
+                        }
+                        this.connectionState = HubConnectionState.Connecting;
+                        this.logger.log(LogLevel.Debug, "Starting HubConnection.");
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, this.startInternal()];
+                    case 2:
+                        _a.sent();
+                        this.connectionState = HubConnectionState.Connected;
+                        this.connectionStarted = true;
+                        this.logger.log(LogLevel.Debug, "HubConnection connected successfully.");
+                        return [3 /*break*/, 4];
+                    case 3:
+                        e_1 = _a.sent();
+                        this.connectionState = HubConnectionState.Disconnected;
+                        this.logger.log(LogLevel.Debug, "HubConnection failed to start successfully because of error '" + e_1 + "'.");
+                        return [2 /*return*/, Promise.reject(e_1)];
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    HubConnection.prototype.startInternal = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var handshakePromise, handshakeRequest, e_2;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        handshakeRequest = {
-                            protocol: this.protocol.name,
-                            version: this.protocol.version,
-                        };
-                        this.logger.log(LogLevel.Debug, "Starting HubConnection.");
+                        this.stopDuringStartError = undefined;
                         this.receivedHandshakeResponse = false;
                         handshakePromise = new Promise(function (resolve, reject) {
                             _this.handshakeResolver = resolve;
@@ -112,22 +186,49 @@ var HubConnection = /** @class */ (function () {
                         return [4 /*yield*/, this.connection.start(this.protocol.transferFormat)];
                     case 1:
                         _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, 5, , 7]);
+                        handshakeRequest = {
+                            protocol: this.protocol.name,
+                            version: this.protocol.version,
+                        };
                         this.logger.log(LogLevel.Debug, "Sending handshake request.");
                         return [4 /*yield*/, this.sendMessage(this.handshakeProtocol.writeHandshakeRequest(handshakeRequest))];
-                    case 2:
+                    case 3:
                         _a.sent();
                         this.logger.log(LogLevel.Information, "Using HubProtocol '" + this.protocol.name + "'.");
                         // defensively cleanup timeout in case we receive a message from the server before we finish start
                         this.cleanupTimeout();
                         this.resetTimeoutPeriod();
                         this.resetKeepAliveInterval();
-                        // Wait for the handshake to complete before marking connection as connected
                         return [4 /*yield*/, handshakePromise];
-                    case 3:
-                        // Wait for the handshake to complete before marking connection as connected
+                    case 4:
                         _a.sent();
-                        this.connectionState = HubConnectionState.Connected;
-                        return [2 /*return*/];
+                        // It's important to check the stopDuringStartError instead of just relying on the handshakePromise
+                        // being rejected on close, because this continuation can run after both the handshake completed successfully
+                        // and the connection was closed.
+                        if (this.stopDuringStartError) {
+                            // It's important to throw instead of returning a rejected promise, because we don't want to allow any state
+                            // transitions to occur between now and the calling code observing the exceptions. Returning a rejected promise
+                            // will cause the calling continuation to get scheduled to run later.
+                            throw this.stopDuringStartError;
+                        }
+                        return [3 /*break*/, 7];
+                    case 5:
+                        e_2 = _a.sent();
+                        this.logger.log(LogLevel.Debug, "Hub handshake failed with error '" + e_2 + "' during start(). Stopping HubConnection.");
+                        this.cleanupTimeout();
+                        this.cleanupPingTimer();
+                        // HttpConnection.stop() should not complete until after the onclose callback is invoked.
+                        // This will transition the HubConnection to the disconnected state before HttpConnection.stop() completes.
+                        return [4 /*yield*/, this.connection.stop(e_2)];
+                    case 6:
+                        // HttpConnection.stop() should not complete until after the onclose callback is invoked.
+                        // This will transition the HubConnection to the disconnected state before HttpConnection.stop() completes.
+                        _a.sent();
+                        throw e_2;
+                    case 7: return [2 /*return*/];
                 }
             });
         });
@@ -137,10 +238,61 @@ var HubConnection = /** @class */ (function () {
      * @returns {Promise<void>} A Promise that resolves when the connection has been successfully terminated, or rejects with an error.
      */
     HubConnection.prototype.stop = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var startPromise, e_3;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        startPromise = this.startPromise;
+                        this.stopPromise = this.stopInternal();
+                        return [4 /*yield*/, this.stopPromise];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, 4, , 5]);
+                        // Awaiting undefined continues immediately
+                        return [4 /*yield*/, startPromise];
+                    case 3:
+                        // Awaiting undefined continues immediately
+                        _a.sent();
+                        return [3 /*break*/, 5];
+                    case 4:
+                        e_3 = _a.sent();
+                        return [3 /*break*/, 5];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    HubConnection.prototype.stopInternal = function (error) {
+        if (this.connectionState === HubConnectionState.Disconnected) {
+            this.logger.log(LogLevel.Debug, "Call to HubConnection.stop(" + error + ") ignored because it is already in the disconnected state.");
+            return Promise.resolve();
+        }
+        if (this.connectionState === HubConnectionState.Disconnecting) {
+            this.logger.log(LogLevel.Debug, "Call to HttpConnection.stop(" + error + ") ignored because the connection is already in the disconnecting state.");
+            return this.stopPromise;
+        }
+        this.connectionState = HubConnectionState.Disconnecting;
         this.logger.log(LogLevel.Debug, "Stopping HubConnection.");
+        if (this.reconnectDelayHandle) {
+            // We're in a reconnect delay which means the underlying connection is currently already stopped.
+            // Just clear the handle to stop the reconnect loop (which no one is waiting on thankfully) and
+            // fire the onclose callbacks.
+            this.logger.log(LogLevel.Debug, "Connection stopped during reconnect delay. Done reconnecting.");
+            clearTimeout(this.reconnectDelayHandle);
+            this.reconnectDelayHandle = undefined;
+            this.completeClose();
+            return Promise.resolve();
+        }
         this.cleanupTimeout();
         this.cleanupPingTimer();
-        return this.connection.stop();
+        this.stopDuringStartError = error || new Error("The connection was stopped before the hub handshake could complete.");
+        // HttpConnection.stop() should not complete until after either HttpConnection.start() fails
+        // or the onclose callback is invoked. The onclose callback will transition the HubConnection
+        // to the disconnected state if need be before HttpConnection.stop() completes.
+        return this.connection.stop(error);
     };
     /** Invokes a streaming hub method on the server using the specified name and arguments.
      *
@@ -155,15 +307,15 @@ var HubConnection = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             args[_i - 1] = arguments[_i];
         }
-        var invocationDescriptor = this.createStreamInvocation(methodName, args);
+        var _a = this.replaceStreamingParams(args), streams = _a[0], streamIds = _a[1];
+        var invocationDescriptor = this.createStreamInvocation(methodName, args, streamIds);
         var promiseQueue;
         var subject = new Subject();
         subject.cancelCallback = function () {
             var cancelInvocation = _this.createCancelInvocation(invocationDescriptor.invocationId);
-            var cancelMessage = _this.protocol.writeMessage(cancelInvocation);
             delete _this.callbacks[invocationDescriptor.invocationId];
             return promiseQueue.then(function () {
-                return _this.sendMessage(cancelMessage);
+                return _this.sendWithProtocol(cancelInvocation);
             });
         };
         this.callbacks[invocationDescriptor.invocationId] = function (invocationEvent, error) {
@@ -186,17 +338,24 @@ var HubConnection = /** @class */ (function () {
                 }
             }
         };
-        var message = this.protocol.writeMessage(invocationDescriptor);
-        promiseQueue = this.sendMessage(message)
+        promiseQueue = this.sendWithProtocol(invocationDescriptor)
             .catch(function (e) {
             subject.error(e);
             delete _this.callbacks[invocationDescriptor.invocationId];
         });
+        this.launchStreams(streams, promiseQueue);
         return subject;
     };
     HubConnection.prototype.sendMessage = function (message) {
         this.resetKeepAliveInterval();
         return this.connection.send(message);
+    };
+    /**
+     * Sends a js object to the server.
+     * @param message The js object to serialize and send.
+     */
+    HubConnection.prototype.sendWithProtocol = function (message) {
+        return this.sendMessage(this.protocol.writeMessage(message));
     };
     /** Invokes a hub method on the server using the specified name and arguments. Does not wait for a response from the receiver.
      *
@@ -212,9 +371,10 @@ var HubConnection = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             args[_i - 1] = arguments[_i];
         }
-        var invocationDescriptor = this.createInvocation(methodName, args, true);
-        var message = this.protocol.writeMessage(invocationDescriptor);
-        return this.sendMessage(message);
+        var _a = this.replaceStreamingParams(args), streams = _a[0], streamIds = _a[1];
+        var sendPromise = this.sendWithProtocol(this.createInvocation(methodName, args, true, streamIds));
+        this.launchStreams(streams, sendPromise);
+        return sendPromise;
     };
     /** Invokes a hub method on the server using the specified name and arguments.
      *
@@ -233,7 +393,8 @@ var HubConnection = /** @class */ (function () {
         for (var _i = 1; _i < arguments.length; _i++) {
             args[_i - 1] = arguments[_i];
         }
-        var invocationDescriptor = this.createInvocation(methodName, args, false);
+        var _a = this.replaceStreamingParams(args), streams = _a[0], streamIds = _a[1];
+        var invocationDescriptor = this.createInvocation(methodName, args, false, streamIds);
         var p = new Promise(function (resolve, reject) {
             // invocationId will always have a value for a non-blocking invocation
             _this.callbacks[invocationDescriptor.invocationId] = function (invocationEvent, error) {
@@ -256,13 +417,13 @@ var HubConnection = /** @class */ (function () {
                     }
                 }
             };
-            var message = _this.protocol.writeMessage(invocationDescriptor);
-            _this.sendMessage(message)
+            var promiseQueue = _this.sendWithProtocol(invocationDescriptor)
                 .catch(function (e) {
                 reject(e);
                 // invocationId will always have a value for a non-blocking invocation
                 delete _this.callbacks[invocationDescriptor.invocationId];
             });
+            _this.launchStreams(streams, promiseQueue);
         });
         return p;
     };
@@ -316,6 +477,24 @@ var HubConnection = /** @class */ (function () {
             this.closedCallbacks.push(callback);
         }
     };
+    /** Registers a handler that will be invoked when the connection starts reconnecting.
+     *
+     * @param {Function} callback The handler that will be invoked when the connection starts reconnecting. Optionally receives a single argument containing the error that caused the connection to start reconnecting (if any).
+     */
+    HubConnection.prototype.onreconnecting = function (callback) {
+        if (callback) {
+            this.reconnectingCallbacks.push(callback);
+        }
+    };
+    /** Registers a handler that will be invoked when the connection successfully reconnects.
+     *
+     * @param {Function} callback The handler that will be invoked when the connection successfully reconnects.
+     */
+    HubConnection.prototype.onreconnected = function (callback) {
+        if (callback) {
+            this.reconnectedCallbacks.push(callback);
+        }
+    };
     HubConnection.prototype.processIncomingData = function (data) {
         this.cleanupTimeout();
         if (!this.receivedHandshakeResponse) {
@@ -335,7 +514,7 @@ var HubConnection = /** @class */ (function () {
                     case MessageType.StreamItem:
                     case MessageType.Completion:
                         var callback = this.callbacks[message.invocationId];
-                        if (callback != null) {
+                        if (callback) {
                             if (message.type === MessageType.Completion) {
                                 delete this.callbacks[message.invocationId];
                             }
@@ -348,8 +527,7 @@ var HubConnection = /** @class */ (function () {
                     case MessageType.Close:
                         this.logger.log(LogLevel.Information, "Close message received from server.");
                         // We don't want to wait on the stop itself.
-                        // tslint:disable-next-line:no-floating-promises
-                        this.connection.stop(message.error ? new Error("Server returned an error on close: " + message.error) : undefined);
+                        this.stopPromise = this.stopInternal(message.error ? new Error("Server returned an error on close: " + message.error) : undefined);
                         break;
                     default:
                         this.logger.log(LogLevel.Warning, "Invalid message type: " + message.type + ".");
@@ -370,20 +548,15 @@ var HubConnection = /** @class */ (function () {
             var message = "Error parsing handshake response: " + e;
             this.logger.log(LogLevel.Error, message);
             var error = new Error(message);
-            // We don't want to wait on the stop itself.
-            // tslint:disable-next-line:no-floating-promises
-            this.connection.stop(error);
             this.handshakeRejecter(error);
             throw error;
         }
         if (responseMessage.error) {
             var message = "Server returned handshake error: " + responseMessage.error;
             this.logger.log(LogLevel.Error, message);
-            this.handshakeRejecter(message);
-            // We don't want to wait on the stop itself.
-            // tslint:disable-next-line:no-floating-promises
-            this.connection.stop(new Error(message));
-            throw new Error(message);
+            var error = new Error(message);
+            this.handshakeRejecter(error);
+            throw error;
         }
         else {
             this.logger.log(LogLevel.Debug, "Server handshake complete.");
@@ -427,7 +600,7 @@ var HubConnection = /** @class */ (function () {
     };
     HubConnection.prototype.serverTimeout = function () {
         // The server hasn't talked to us in a while. It doesn't like us anymore ... :(
-        // Terminate the connection, but we don't need to wait on the promise.
+        // Terminate the connection, but we don't need to wait on the promise. This could trigger reconnecting.
         // tslint:disable-next-line:no-floating-promises
         this.connection.stop(new Error("Server timeout elapsed without receiving a message from the server."));
     };
@@ -435,14 +608,18 @@ var HubConnection = /** @class */ (function () {
         var _this = this;
         var methods = this.methods[invocationMessage.target.toLowerCase()];
         if (methods) {
-            methods.forEach(function (m) { return m.apply(_this, invocationMessage.arguments); });
+            try {
+                methods.forEach(function (m) { return m.apply(_this, invocationMessage.arguments); });
+            }
+            catch (e) {
+                this.logger.log(LogLevel.Error, "A callback for the method " + invocationMessage.target.toLowerCase() + " threw error '" + e + "'.");
+            }
             if (invocationMessage.invocationId) {
                 // This is not supported in v1. So we return an error to avoid blocking the server waiting for the response.
                 var message = "Server requested a response, which is not supported in this version of the client.";
                 this.logger.log(LogLevel.Error, message);
-                // We don't need to wait on this Promise.
-                // tslint:disable-next-line:no-floating-promises
-                this.connection.stop(new Error(message));
+                // We don't want to wait on the stop itself.
+                this.stopPromise = this.stopInternal(new Error(message));
             }
         }
         else {
@@ -450,23 +627,153 @@ var HubConnection = /** @class */ (function () {
         }
     };
     HubConnection.prototype.connectionClosed = function (error) {
+        this.logger.log(LogLevel.Debug, "HubConnection.connectionClosed(" + error + ") called while in state " + this.connectionState + ".");
+        // Triggering this.handshakeRejecter is insufficient because it could already be resolved without the continuation having run yet.
+        this.stopDuringStartError = this.stopDuringStartError || error || new Error("The underlying connection was closed before the hub handshake could complete.");
+        // If the handshake is in progress, start will be waiting for the handshake promise, so we complete it.
+        // If it has already completed, this should just noop.
+        if (this.handshakeResolver) {
+            this.handshakeResolver();
+        }
+        this.cancelCallbacksWithError(error || new Error("Invocation canceled due to the underlying connection being closed."));
+        this.cleanupTimeout();
+        this.cleanupPingTimer();
+        if (this.connectionState === HubConnectionState.Disconnecting) {
+            this.completeClose(error);
+        }
+        else if (this.connectionState === HubConnectionState.Connected && this.reconnectPolicy) {
+            // tslint:disable-next-line:no-floating-promises
+            this.reconnect(error);
+        }
+        else if (this.connectionState === HubConnectionState.Connected) {
+            this.completeClose(error);
+        }
+        // If none of the above if conditions were true were called the HubConnection must be in either:
+        // 1. The Connecting state in which case the handshakeResolver will complete it and stopDuringStartError will fail it.
+        // 2. The Reconnecting state in which case the handshakeResolver will complete it and stopDuringStartError will fail the current reconnect attempt
+        //    and potentially continue the reconnect() loop.
+        // 3. The Disconnected state in which case we're already done.
+    };
+    HubConnection.prototype.completeClose = function (error) {
         var _this = this;
+        if (this.connectionStarted) {
+            this.connectionState = HubConnectionState.Disconnected;
+            this.connectionStarted = false;
+            try {
+                this.closedCallbacks.forEach(function (c) { return c.apply(_this, [error]); });
+            }
+            catch (e) {
+                this.logger.log(LogLevel.Error, "An onclose callback called with error '" + error + "' threw error '" + e + "'.");
+            }
+        }
+    };
+    HubConnection.prototype.reconnect = function (error) {
+        return __awaiter(this, void 0, void 0, function () {
+            var reconnectStartTime, previousReconnectAttempts, retryError, nextRetryDelay, e_4;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        reconnectStartTime = Date.now();
+                        previousReconnectAttempts = 0;
+                        retryError = error !== undefined ? error : new Error("Attempting to reconnect due to a unknown error.");
+                        nextRetryDelay = this.getNextRetryDelay(previousReconnectAttempts++, 0, retryError);
+                        if (nextRetryDelay === null) {
+                            this.logger.log(LogLevel.Debug, "Connection not reconnecting because the IRetryPolicy returned null on the first reconnect attempt.");
+                            this.completeClose(error);
+                            return [2 /*return*/];
+                        }
+                        this.connectionState = HubConnectionState.Reconnecting;
+                        if (error) {
+                            this.logger.log(LogLevel.Information, "Connection reconnecting because of error '" + error + "'.");
+                        }
+                        else {
+                            this.logger.log(LogLevel.Information, "Connection reconnecting.");
+                        }
+                        if (this.onreconnecting) {
+                            try {
+                                this.reconnectingCallbacks.forEach(function (c) { return c.apply(_this, [error]); });
+                            }
+                            catch (e) {
+                                this.logger.log(LogLevel.Error, "An onreconnecting callback called with error '" + error + "' threw error '" + e + "'.");
+                            }
+                            // Exit early if an onreconnecting callback called connection.stop().
+                            if (this.connectionState !== HubConnectionState.Reconnecting) {
+                                this.logger.log(LogLevel.Debug, "Connection left the reconnecting state in onreconnecting callback. Done reconnecting.");
+                                return [2 /*return*/];
+                            }
+                        }
+                        _a.label = 1;
+                    case 1:
+                        if (!(nextRetryDelay !== null)) return [3 /*break*/, 7];
+                        this.logger.log(LogLevel.Information, "Reconnect attempt number " + previousReconnectAttempts + " will start in " + nextRetryDelay + " ms.");
+                        return [4 /*yield*/, new Promise(function (resolve) {
+                                _this.reconnectDelayHandle = setTimeout(resolve, nextRetryDelay);
+                            })];
+                    case 2:
+                        _a.sent();
+                        this.reconnectDelayHandle = undefined;
+                        if (this.connectionState !== HubConnectionState.Reconnecting) {
+                            this.logger.log(LogLevel.Debug, "Connection left the reconnecting state during reconnect delay. Done reconnecting.");
+                            return [2 /*return*/];
+                        }
+                        _a.label = 3;
+                    case 3:
+                        _a.trys.push([3, 5, , 6]);
+                        return [4 /*yield*/, this.startInternal()];
+                    case 4:
+                        _a.sent();
+                        this.connectionState = HubConnectionState.Connected;
+                        this.logger.log(LogLevel.Information, "HubConnection reconnected successfully.");
+                        if (this.onreconnected) {
+                            try {
+                                this.reconnectedCallbacks.forEach(function (c) { return c.apply(_this, [_this.connection.connectionId]); });
+                            }
+                            catch (e) {
+                                this.logger.log(LogLevel.Error, "An onreconnected callback called with connectionId '" + this.connection.connectionId + "; threw error '" + e + "'.");
+                            }
+                        }
+                        return [2 /*return*/];
+                    case 5:
+                        e_4 = _a.sent();
+                        this.logger.log(LogLevel.Information, "Reconnect attempt failed because of error '" + e_4 + "'.");
+                        if (this.connectionState !== HubConnectionState.Reconnecting) {
+                            this.logger.log(LogLevel.Debug, "Connection left the reconnecting state during reconnect attempt. Done reconnecting.");
+                            return [2 /*return*/];
+                        }
+                        retryError = e_4 instanceof Error ? e_4 : new Error(e_4.toString());
+                        nextRetryDelay = this.getNextRetryDelay(previousReconnectAttempts++, Date.now() - reconnectStartTime, retryError);
+                        return [3 /*break*/, 6];
+                    case 6: return [3 /*break*/, 1];
+                    case 7:
+                        this.logger.log(LogLevel.Information, "Reconnect retries have been exhausted after " + (Date.now() - reconnectStartTime) + " ms and " + previousReconnectAttempts + " failed attempts. Connection disconnecting.");
+                        this.completeClose();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    HubConnection.prototype.getNextRetryDelay = function (previousRetryCount, elapsedMilliseconds, retryReason) {
+        try {
+            return this.reconnectPolicy.nextRetryDelayInMilliseconds({
+                elapsedMilliseconds: elapsedMilliseconds,
+                previousRetryCount: previousRetryCount,
+                retryReason: retryReason,
+            });
+        }
+        catch (e) {
+            this.logger.log(LogLevel.Error, "IRetryPolicy.nextRetryDelayInMilliseconds(" + previousRetryCount + ", " + elapsedMilliseconds + ") threw error '" + e + "'.");
+            return null;
+        }
+    };
+    HubConnection.prototype.cancelCallbacksWithError = function (error) {
         var callbacks = this.callbacks;
         this.callbacks = {};
-        this.connectionState = HubConnectionState.Disconnected;
-        // if handshake is in progress start will be waiting for the handshake promise, so we complete it
-        // if it has already completed this should just noop
-        if (this.handshakeRejecter) {
-            this.handshakeRejecter(error);
-        }
         Object.keys(callbacks)
             .forEach(function (key) {
             var callback = callbacks[key];
-            callback(null, error ? error : new Error("Invocation canceled due to connection being closed."));
+            callback(null, error);
         });
-        this.cleanupTimeout();
-        this.cleanupPingTimer();
-        this.closedCallbacks.forEach(function (c) { return c.apply(_this, [error]); });
     };
     HubConnection.prototype.cleanupPingTimer = function () {
         if (this.pingServerHandle) {
@@ -478,31 +785,93 @@ var HubConnection = /** @class */ (function () {
             clearTimeout(this.timeoutHandle);
         }
     };
-    HubConnection.prototype.createInvocation = function (methodName, args, nonblocking) {
+    HubConnection.prototype.createInvocation = function (methodName, args, nonblocking, streamIds) {
         if (nonblocking) {
             return {
                 arguments: args,
+                streamIds: streamIds,
                 target: methodName,
                 type: MessageType.Invocation,
             };
         }
         else {
-            var id = this.id;
-            this.id++;
+            var invocationId = this.invocationId;
+            this.invocationId++;
             return {
                 arguments: args,
-                invocationId: id.toString(),
+                invocationId: invocationId.toString(),
+                streamIds: streamIds,
                 target: methodName,
                 type: MessageType.Invocation,
             };
         }
     };
-    HubConnection.prototype.createStreamInvocation = function (methodName, args) {
-        var id = this.id;
-        this.id++;
+    HubConnection.prototype.launchStreams = function (streams, promiseQueue) {
+        var _this = this;
+        if (streams.length === 0) {
+            return;
+        }
+        // Synchronize stream data so they arrive in-order on the server
+        if (!promiseQueue) {
+            promiseQueue = Promise.resolve();
+        }
+        var _loop_1 = function (streamId) {
+            streams[streamId].subscribe({
+                complete: function () {
+                    promiseQueue = promiseQueue.then(function () { return _this.sendWithProtocol(_this.createCompletionMessage(streamId)); });
+                },
+                error: function (err) {
+                    var message;
+                    if (err instanceof Error) {
+                        message = err.message;
+                    }
+                    else if (err && err.toString) {
+                        message = err.toString();
+                    }
+                    else {
+                        message = "Unknown error";
+                    }
+                    promiseQueue = promiseQueue.then(function () { return _this.sendWithProtocol(_this.createCompletionMessage(streamId, message)); });
+                },
+                next: function (item) {
+                    promiseQueue = promiseQueue.then(function () { return _this.sendWithProtocol(_this.createStreamItemMessage(streamId, item)); });
+                },
+            });
+        };
+        // We want to iterate over the keys, since the keys are the stream ids
+        // tslint:disable-next-line:forin
+        for (var streamId in streams) {
+            _loop_1(streamId);
+        }
+    };
+    HubConnection.prototype.replaceStreamingParams = function (args) {
+        var streams = [];
+        var streamIds = [];
+        for (var i = 0; i < args.length; i++) {
+            var argument = args[i];
+            if (this.isObservable(argument)) {
+                var streamId = this.invocationId;
+                this.invocationId++;
+                // Store the stream for later use
+                streams[streamId] = argument;
+                streamIds.push(streamId.toString());
+                // remove stream from args
+                args.splice(i, 1);
+            }
+        }
+        return [streams, streamIds];
+    };
+    HubConnection.prototype.isObservable = function (arg) {
+        // This allows other stream implementations to just work (like rxjs)
+        return arg && arg.subscribe && typeof arg.subscribe === "function";
+    };
+    HubConnection.prototype.createStreamInvocation = function (methodName, args, streamIds) {
+        var invocationId = this.invocationId;
+        this.invocationId++;
         return {
             arguments: args,
-            invocationId: id.toString(),
+            invocationId: invocationId.toString(),
+            streamIds: streamIds,
             target: methodName,
             type: MessageType.StreamInvocation,
         };
@@ -511,6 +880,27 @@ var HubConnection = /** @class */ (function () {
         return {
             invocationId: id,
             type: MessageType.CancelInvocation,
+        };
+    };
+    HubConnection.prototype.createStreamItemMessage = function (id, item) {
+        return {
+            invocationId: id,
+            item: item,
+            type: MessageType.StreamItem,
+        };
+    };
+    HubConnection.prototype.createCompletionMessage = function (id, error, result) {
+        if (error) {
+            return {
+                error: error,
+                invocationId: id,
+                type: MessageType.Completion,
+            };
+        }
+        return {
+            invocationId: id,
+            result: result,
+            type: MessageType.Completion,
         };
     };
     return HubConnection;

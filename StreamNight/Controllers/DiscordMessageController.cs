@@ -26,6 +26,11 @@ namespace StreamNight.Controllers
             _configuration = configuration;
         }
 
+        /// <summary>
+        /// Sends a Discord message to clients connected to the SignalR hub.
+        /// </summary>
+        /// <param name="inputJson">The encrypted, signed NewMessage object as JSON.</param>
+        /// <returns>Status message for the response. 401 Unauthorized if invalid HMAC, 400 BadRequest if invalid JSON, or 200 OK if successful.</returns>
         [HttpPost]
         [IgnoreAntiforgeryToken]
         public async Task<ActionResult> NewDiscordMessage([FromBody] string inputJson)
@@ -51,6 +56,11 @@ namespace StreamNight.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Sends an edit notification to clients connected to the SignalR hub.
+        /// </summary>
+        /// <param name="inputJson">The encrypted, signed EditMessage object as JSON.</param>
+        /// <returns>Status message for the response. 401 Unauthorized if invalid HMAC, 400 BadRequest if invalid JSON, or 200 OK if successful.</returns>
         [HttpPut]
         [IgnoreAntiforgeryToken]
         public async Task<ActionResult> EditDiscordMessage([FromBody] string inputJson)
@@ -75,6 +85,11 @@ namespace StreamNight.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Sends a delete notification to clients connected to the SignalR hub.
+        /// </summary>
+        /// <param name="inputJson">The encrypted, signed DeleteMessage object as JSON.</param>
+        /// <returns>Status message for the response. 401 Unauthorized if invalid HMAC, 400 BadRequest if invalid JSON, or 200 OK if successful.</returns>
         [HttpDelete]
         [IgnoreAntiforgeryToken]
         public async Task<ActionResult> DeleteDiscordMessage([FromBody] string inputJson)

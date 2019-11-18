@@ -9,6 +9,8 @@ var connection = new signalR.HubConnectionBuilder().withUrl("/admin/statushub").
 connection.serverTimeoutInMilliseconds = 10000;
 
 connection.on("systemStatus", function (SystemStatus) {
+    console.log(SystemStatus);
+
     statusTableBody.innerHTML = '';
     for (var statusProperty in SystemStatus) {
         let propertyRow = statusTableBody.insertRow(-1);
@@ -19,7 +21,7 @@ connection.on("systemStatus", function (SystemStatus) {
         let propertyValue = propertyRow.insertCell(-1);
         propertyValue.appendChild(document.createTextNode(SystemStatus[statusProperty]));
 
-        if (statusProperty == 'lastPoll' || statusProperty == 'lastChange') {
+        if (statusProperty == 'LastPoll' || statusProperty == 'LastChange') {
             propertyValue.innerHTML = '';
             propertyValue.appendChild(document.createTextNode(GetTimeFromUnix(SystemStatus[statusProperty])))
         }
@@ -87,6 +89,22 @@ function startBot() {
 function toggleServerIcon() {
     connection.invoke("ToggleServerIcon");
     alert("Toggled server icon.");
+}
+
+function togglePresence() {
+    connection.invoke("TogglePresence");
+    alert("Toggled presence.");
+}
+
+function togglePlaylistRedirect() {
+    connection.invoke("TogglePlaylistRedirect");
+    alert("Toggled playlist redirect.");
+}
+
+function updatePlaylistUrl() {
+    connection.invoke("SetRedirectTarget", document.getElementById("redirect-url").value);
+    document.getElementById("redirect-url").value = "";
+    alert("Updated redirect.");
 }
 
 connect();

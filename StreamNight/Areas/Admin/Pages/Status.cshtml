@@ -1,5 +1,7 @@
 ﻿@page
 @model StreamNight.Areas.Admin.Pages.StatusModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@addTagHelper *, AuthoringTagHelpers
 @{
     Layout = "_Layout";
     ViewBag.Title = "Streambot Status";
@@ -7,6 +9,7 @@
 
 <section>
     <link rel="stylesheet" href="~/css/admin/status.css">
+
     <h1>Streambot Status</h1>
     <p>This page displays the current status of the bot.</p>
 
@@ -24,10 +27,17 @@
     </table>
 
     <div id="bot-control">
-        <button onclick="stopBot()">Stop Bot</button>
-        <button onclick="startBot()">Start Bot</button>
-        <button id="toggle-server-icon" onclick="toggleServerIcon()">Toggle Server Icon</button>
+        <button class="alert-danger" onclick="stopBot()">Stop Bot</button>
+        <button class="alert-danger" onclick="startBot()">Start Bot</button>
+        <button onclick="toggleServerIcon()">Toggle Server Icon</button>
     </div>
+
+    <form id="redirect-control" onsubmit="return false;">
+        <label for="redirect-url">Playlist URL</label>
+        <input id="redirect-url" name="redirect-url" type="text" />
+        <button onclick="togglePlaylistRedirect()">Toggle Playlist Redirect</button>
+        <button onclick="updatePlaylistUrl()">Update Playlist URL</button>
+    </form>
     <script src="~/lib/signalr/dist/browser/signalr.min.js"></script>
     <script src="~/js/admin/status.js"></script>
 </section>

@@ -29,6 +29,10 @@ namespace StreamNight.Controllers
             _configuration = configuration;
         }
 
+        /// <summary>
+        /// Retrieves master playlist and sends it to the client.
+        /// </summary>
+        /// <returns>An ActionResult containing the HLS playlist text as "application/x-mpegURL".</returns>
         [Authorize]
         [HttpGet]
         [HttpHead]
@@ -52,6 +56,11 @@ namespace StreamNight.Controllers
             }
         }
 
+        /// <summary>
+        /// Sends StreamUp message to clients. Used to link Discord and the SignalR hub together.
+        /// </summary>
+        /// <param name="inputJson">Signed and encrypted JSON object with message payload.</param>
+        /// <returns>Result of the performed action. 200 OK if processed correctly or 400 BadRequest if incorrect parameters.</returns>
         [HttpPost]
         [IgnoreAntiforgeryToken]
         public async Task<ActionResult> NewDiscordMessage([FromBody] string inputJson)
