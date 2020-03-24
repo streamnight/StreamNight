@@ -1,9 +1,5 @@
 # Media Sources
 
-**This is a draft document. Contents are subject to change without notice.**
-
-**There is no license granted for this document. Do not redistribute.**
-
 StreamNight supports any HLS server. 
 
 Configuration and support for third-party software is out of scope for this project, but one example of a compatible server is here to help deployers get a working setup as quickly as possible.
@@ -386,7 +382,7 @@ Check your web server's documentation if you're using something else.
 1. Add `except /hls` to inside the `proxy` directive. It should then look like this:
 
 ```
-    proxy / stream.example.com:5050 {
+    proxy / https://stream.example.com:5050 {
         [omitted]
         except /hls
     }
@@ -420,10 +416,11 @@ stream.example.com {
     gzip {
         not /hls
     }
-    proxy / stream.example.com:5050 {
+    proxy / https://stream.example.com:5050 {
         transparent
         websocket
         header_downstream Access-Control-Allow-Origin "*"
+        insecure_skip_verify
         except /hls
     }
     root [fully rooted HLS output path]

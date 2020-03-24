@@ -426,6 +426,11 @@ button:disabled {
     margin-right: 0.3rem;
 }
 
+/* Fix issue where image would barely clip out of parent container and trigger scrolling */
+#viewerDetails > div:last-child img {
+	margin-right: 0.35rem;
+}
+
 .typing img {
     animation: typing 1s ease-in-out infinite alternate;
     transition: transform ease-in-out 0.1s;
@@ -489,6 +494,7 @@ button:disabled {
     display: block;
     width: 4rem;
     height: 4rem;
+	border-radius: 50%;
     background: black;
     opacity: 0.5;
     z-index: -1;
@@ -918,4 +924,8 @@ emoji-picker .emoji-mart-emoji:hover::before, emoji-picker .emoji-mart-emoji:hov
 
 .video-js.vjs-fluid, .video-js.vjs-16-9, .video-js.vjs-4-3 {
     height: auto !important;
+}
+
+.vjs-volume-bar > .vjs-volume-level {
+	background-color: gray !important;
 }

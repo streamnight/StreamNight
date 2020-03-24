@@ -36,7 +36,7 @@ This table lists the current settings in the shipping publish profiles:
 
 | Name           | Build Configuration | Architecture                | Target Framework | Requires Runtime | Binary Location                  |
 | -------------- | ------------------- | --------------------------- | ---------------- | ---------------- | -------------------------------- |
-| `nc-rel-30-fd` | Release             | Any CPU (32-bit and 64-bit) | .NET Core 3.0    | Yes              | `bin\pub\Release\netcoreapp3.0\` |
+| `nc-rel-31-fd` | Release             | Any CPU (32-bit and 64-bit) | .NET Core 3.1    | Yes              | `bin\pub\Release\netcoreapp3.1\` |
 
 It's possible to have a [self-contained deployment](https://docs.microsoft.com/en-us/dotnet/core/deploying/index) that doesn't require the .NET Core runtime, but these instructions assume you're creating a framework-dependent deployment.
 
@@ -44,7 +44,7 @@ It's possible to have a [self-contained deployment](https://docs.microsoft.com/e
 
 1. Right-click the project in Solution Explorer
 2. Click `Publish...`. It should have a blue globe icon in Visual Studio 2017/2019.
-3. Select the publish profile. The default should be `nc-rel-30-fd`, check the table above for more information.
+3. Select the publish profile. The default should be `nc-rel-31-fd`, check the table above for more information.
 4. Press `Publish`.
 
 #### .NET Core CLI (Cross-platform)

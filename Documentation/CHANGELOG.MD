@@ -2,9 +2,32 @@
 
 This document describes the notable changes made to StreamNight. 
 
-Releases are currently referred to by date as the project is under heavy development and user-facing components are subject to change at any time.
+Releases are currently referred to by date.
 
 **This document follows the ISO 8601 date format.**
+
+## 2020-03-26
+
+### Bug Fixes
+
+* Fixed translation of multiple emotes in a single message
+* Fixed overlay of profile pictures appearing outside the picture's boundaries
+* Fixed OAuth logins on Chrome
+
+**Note: If your logins are failing with a cookie correlation error, ensure your reverse proxy is using a HTTPS connection to Kestrel**
+
+### Improvements
+
+* Upgraded to .NET Core 3.1
+* Updated video.js to enable picture-in-picture support
+* Increased contrast of volume slider
+* Minor code cleanups
+
+### New Features
+
+* Added an error page so it's clearer when StreamNight breaks
+
+*Forked from development commit 910a1caa46267b13558e6eb1431be66e01e5b6c2*
 
 ## 2019-11-18
 

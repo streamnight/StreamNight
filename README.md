@@ -18,7 +18,7 @@ Features include:
 
 ## System Requirements
 
-StreamNight will run on anything that supports [.NET Core 3.0](https://github.com/dotnet/core/blob/master/release-notes/3.0/3.0-supported-os.md), but it's best to host it on a machine with a fast, reliable internet connection.
+StreamNight will run on anything that supports [.NET Core 3.1](https://github.com/dotnet/core/blob/master/release-notes/3.1/3.1-supported-os.md), but it's best to host it on a machine with a fast, reliable internet connection.
 
 It'll generally use 400-500MB of RAM on a machine with memory to spare.
 

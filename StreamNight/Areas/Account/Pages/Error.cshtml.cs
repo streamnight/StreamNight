@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using StreamNight.SupportLibs.Discord;
 
 namespace StreamNight.Areas.Account.Pages
 {
@@ -13,9 +14,6 @@ namespace StreamNight.Areas.Account.Pages
 
         public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
 
-        public void OnGet()
-        {
-            RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
-        }
+        public bool UserIsAdministrator => User.IsInRole("StreamController") || User.IsInRole("Administrator");
     }
 }

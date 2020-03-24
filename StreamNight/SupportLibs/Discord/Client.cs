@@ -252,7 +252,6 @@ namespace StreamNight.SupportLibs.Discord
                 // Cancellation requested or the client crashed, perform cleanup.
                 this.Ready = false;
 
-                await this.discordClient.DisconnectAsync();
                 this.discordClient.Dispose();
                 this.Running = false;
                 stopClientTokenSource.Dispose();
@@ -355,9 +354,15 @@ namespace StreamNight.SupportLibs.Discord
 
                 MatchCollection colonEmotes = Regex.Matches(newMessage.Content, @":[a-zA-Z0-9_~]+:(?!\d+)");
                 string translatedContent = newMessage.Content;
+                List<string> translatedEmotes = new List<string>(colonEmotes.Count);
 
                 foreach (Match colonEmote in colonEmotes)
                 {
+                    if (translatedEmotes.Contains(colonEmote.Value))
+                    {
+                        break;
+                    }
+
                     try
                     {
                         DiscordEmoji emote = DiscordEmoji.FromName(discordClient, colonEmote.Value);
@@ -373,6 +378,8 @@ namespace StreamNight.SupportLibs.Discord
                         {
                             translatedContent = translatedContent.Replace(colonEmote.Value, $"<:{emote.Name}:{emote.Id}>");
                         }
+
+                        translatedEmotes.Add(colonEmote.Value);
                     }
                     catch
                     {

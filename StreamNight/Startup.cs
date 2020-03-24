@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -41,6 +42,15 @@ namespace StreamNight
             {
                 options.Conventions.AuthorizeAreaFolder("Account", "/Manage");
                 options.Conventions.AuthorizeAreaPage("Account", "/Logout");
+            });
+
+            services.Configure<CookiePolicyOptions>(options =>
+            {
+                options.MinimumSameSitePolicy = SameSiteMode.Unspecified;
+                options.OnAppendCookie = cookieContext =>
+                    CheckSameSite(cookieContext.Context, cookieContext.CookieOptions);
+                options.OnDeleteCookie = cookieContext =>
+                    CheckSameSite(cookieContext.Context, cookieContext.CookieOptions);
             });
 
             services.AddAuthentication()
@@ -127,8 +137,7 @@ namespace StreamNight
             }
             else
             {
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-                app.UseHsts();
+                app.UseExceptionHandler("/Error");
             }
 
             app.UseStaticFiles();
@@ -138,6 +147,7 @@ namespace StreamNight
 
             app.UseRouting();
 
+            app.UseCookiePolicy();
             app.UseAuthentication();
             app.UseAuthorization();
 
@@ -177,6 +187,45 @@ namespace StreamNight
                 //create the roles and seed them to the database
                 _ = await RoleManager.CreateAsync(new StreamNightRole("StreamController"));
             }
+        }
+
+        private void CheckSameSite(HttpContext httpContext, CookieOptions options)
+        {
+            if (options.SameSite == SameSiteMode.None)
+            {
+                var userAgent = httpContext.Request.Headers["User-Agent"].ToString();
+                if (DisallowsSameSiteNone(userAgent))
+                {
+                    options.SameSite = SameSiteMode.Unspecified;
+                }
+            }
+        }
+
+        // https://devblogs.microsoft.com/aspnet/upcoming-samesite-cookie-changes-in-asp-net-and-asp-net-core/
+        private static bool DisallowsSameSiteNone(string userAgent)
+        {
+            if (string.IsNullOrEmpty(userAgent))
+            {
+                return false;
+            }
+
+            if (userAgent.Contains("CPU iPhone OS 12") || userAgent.Contains("iPad; CPU OS 12"))
+            {
+                return true;
+            }
+
+            if (userAgent.Contains("Macintosh; Intel Mac OS X 10_14") &&
+                userAgent.Contains("Version/") && userAgent.Contains("Safari"))
+            {
+                return true;
+            }
+
+            if (userAgent.Contains("Chrome/5") || userAgent.Contains("Chrome/6"))
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 

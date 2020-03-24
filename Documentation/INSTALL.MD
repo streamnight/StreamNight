@@ -76,11 +76,13 @@ The quality selector will display the vertical resolution of each entry.
 
 ### Running StreamNight
 
-Run `dotnet StreamNight.dll --server.urls=http://0.0.0.0:5050` to start StreamNight listening on all interfaces at port `5050`.
+Run `dotnet StreamNight.dll --server.urls=https://0.0.0.0:5050` to start StreamNight listening on all interfaces at port `5050`.
 
-While it's possible to use StreamNight's internal HTTP server (ASP.NET's Kestrel) instead of using another web server such as Microsoft IIS, Apache, or Nginx, we recommend using a reverse proxy as StreamNight doesn't currently support HTTPS.
+While it's possible to use StreamNight's internal HTTP server (ASP.NET's Kestrel) facing the internet instead of using another web server such as Microsoft IIS, Apache, or Nginx, we recommend using a reverse proxy as StreamNight doesn't currently support serving HLS files. 
 
-We recommend [Caddy](https://caddyserver.com/) as it gives you automatic HTTPS for free, but any web server with support for WebSocket proxying should work.
+**You must use HTTPS for the reverse proxy, as Discord's OAuth relies on an initial HTTPS callback.**
+
+We recommend [Caddy](https://caddyserver.com/) as it gives you automatic trusted HTTPS for free, but any web server with support for WebSocket proxying should work.
 
 ##### Sample Caddy Configuration
 
@@ -88,15 +90,18 @@ We recommend [Caddy](https://caddyserver.com/) as it gives you automatic HTTPS f
 stream.example.com {
     tls PUT YOUR EMAIL HERE!
     gzip
-    proxy / stream.example.com:5050 {
+    proxy / https://stream.example.com:5050 {
         transparent
         websocket
         header_downstream Access-Control-Allow-Origin "*"
+		insecure_skip_verify
     }
 }
 ```
 
 Note: This assumes you're not hosting the HLS files on the same machine. You'll need to add another location block if you're doing so.
+
+You may opt to skip `insecure_skip_verify` in the configuration if you set StreamNight to use a valid HTTPS certificate, but self-signed certs are good enough if you have another web server in front of StreamNight.
 
 ## Compiling StreamNight
 
