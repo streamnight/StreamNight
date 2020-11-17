@@ -9,6 +9,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using System.IO;
+using StreamNight.SupportLibs.Discord;
 
 namespace StreamNight.SupportLibs.SignalR
 {
@@ -136,14 +139,13 @@ namespace StreamNight.SupportLibs.SignalR
 
                 if (user.HasDiscordInfo == null)
                 {
-                    // Try to get a DiscordMember object from Discord.
-                    // Only attempts it on the first go (i.e. if it hasn't looked for one before)
-                    DiscordMember member = null;
                     try
                     {
+                        // Try to get a DiscordMember object from Discord.
+                        // Only attempts it on the first go (i.e. if it hasn't looked for one before)
                         // This isn't the default DiscordClient GetMemberById, look in Client.cs for more info.
                         // It throws an exception if it doesn't exist.
-                        member = _discordBot.DiscordClient.GetMemberById(ulong.Parse(user.AspNetUsername)).Result;
+                        DiscordMember member = _discordBot.DiscordClient.GetMemberById(ulong.Parse(user.AspNetUsername)).Result;
 
                         // If the user is a member of the guild
                         user.HasDiscordInfo = true;
@@ -192,6 +194,9 @@ namespace StreamNight.SupportLibs.SignalR
             };
 
             UserHandler.UserMappings.Add(Context.ConnectionId, user);
+
+            UserLogger.WriteLog(Context.User.Identity.Name, Context.ConnectionId, UserLogger.ConnectionStatus.Connected);
+
             this.Clients.All.SendAsync("ViewerConnected");
 
             return base.OnConnectedAsync();
@@ -203,6 +208,8 @@ namespace StreamNight.SupportLibs.SignalR
         /// <returns>A Task representing the state of the request.</returns>
         public override Task OnDisconnectedAsync(Exception e)
         {
+            UserLogger.WriteLog(Context.User.Identity.Name, Context.ConnectionId, UserLogger.ConnectionStatus.Disconnected);
+
             UserHandler.ConnectedIds.Remove(Context.ConnectionId);
             UserHandler.UserMappings.Remove(Context.ConnectionId);
             // Notify other clients of user disconnection.
@@ -214,110 +221,82 @@ namespace StreamNight.SupportLibs.SignalR
         /// Authenticates user and sends stream up notification to connected clients.
         /// </summary>
         /// <returns>A Task representing the state of the request.</returns>
+		[Authorize(Roles = "StreamController,Administrator")]
         public async Task AdminStreamUp()
         {
-            if (this.Context.User.IsInRole("StreamController") || this.Context.User.IsInRole("Administrator"))
-            {
-                this._discordBot.DiscordClient.StreamUp = true;
-                await this.Clients.All.SendAsync("StreamUp");
-            }
-            else
-            {
-                await this.Clients.Caller.SendAsync("Unauthorised");
-            }
+			this._discordBot.DiscordClient.StreamUp = true;
+			await this.Clients.All.SendAsync("StreamUp");
         }
 
         /// <summary>
         /// Authenticates user and sends stream down notification to connected clients.
         /// </summary>
         /// <returns>A Task representing the state of the request.</returns>
+		[Authorize(Roles = "StreamController,Administrator")]
         public async Task AdminStreamDown()
         {
-            if (this.Context.User.IsInRole("StreamController") || this.Context.User.IsInRole("Administrator"))
-            {
-                this._discordBot.DiscordClient.StreamUp = false;
-                await this.Clients.All.SendAsync("StreamDown");
-            }
-            else
-            {
-                await this.Clients.Caller.SendAsync("Unauthorised");
-            }
+			this._discordBot.DiscordClient.StreamUp = false;
+			await this.Clients.All.SendAsync("StreamDown");
         }
 
         /// <summary>
         /// Authenticates user, then sends disconnection request to all clients and clears current state tracker.
         /// </summary>
         /// <returns>A Task representing the state of the request.</returns>
+		[Authorize(Roles = "StreamController,Administrator")]
         public async Task AdminForceDisconnect()
         {
-            if (this.Context.User.IsInRole("StreamController") || this.Context.User.IsInRole("Administrator"))
-            {
-                UserHandler.ConnectedIds.Clear();
-                UserHandler.UserMappings.Clear();
-                await this.Clients.All.SendAsync("ForceDisconnect");
-            }
-            else
-            {
-                await this.Clients.Caller.SendAsync("Unauthorised");
-            }
+			UserHandler.ConnectedIds.Clear();
+			UserHandler.UserMappings.Clear();
+			await this.Clients.All.SendAsync("ForceDisconnect");
         }
 
         /// <summary>
         /// Authenticates user, then sends refresh request to all clients and clears current state tracker.
         /// </summary>
         /// <returns>A Task representing the state of the request.</returns>
+		[Authorize(Roles = "StreamController,Administrator")]
         public async Task AdminForceRefresh()
         {
-            if (this.Context.User.IsInRole("StreamController") || this.Context.User.IsInRole("Administrator"))
-            {
-                UserHandler.ConnectedIds.Clear();
-                UserHandler.UserMappings.Clear();
-                await this.Clients.All.SendAsync("ForceRefresh");
-            }
-            else
-            {
-                await this.Clients.Caller.SendAsync("Unauthorised");
-            }
+			UserHandler.ConnectedIds.Clear();
+			UserHandler.UserMappings.Clear();
+			await this.Clients.All.SendAsync("ForceRefresh");
         }
 
         /// <summary>
         /// Authenticates user, then sends heartbeat request to all clients and queues heartbeat checker on a background thread.
         /// </summary>
         /// <returns>A Task representing the state of the request.</returns>
+		[Authorize(Roles = "StreamController,Administrator")]
         public async Task AdminSendHeartbeatRequest()
         {
-            if (this.Context.User.IsInRole("StreamController") || this.Context.User.IsInRole("Administrator"))
-            {
-                await this.Clients.All.SendAsync("RequestHeartbeat");
-                _ = Task.Run(async () =>
-                  {
-                      System.Threading.Thread.Sleep(10000);
-                      long heartbeatTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                      // Creates a shallow copy of the HubUser list and operates on that to avoid running into errors with
-                      // foreach() on a changed IEnumerable
-                      foreach (KeyValuePair<string, HubUser> userMapping in new Dictionary<string, HubUser>(UserHandler.UserMappings))
-                      {
-                          // If the last heartbeat time was more than 15s ago, should give some headroom with the 10s delay
-                          if (heartbeatTime - userMapping.Value.LastHeartbeatTime > 15)
-                          {
-                              try
-                              {
-                                  await this.Clients.Client(userMapping.Key).SendAsync("ForceDisconnect");
-                              }
-                              finally
-                              {
-                                  UserHandler.ConnectedIds.Remove(userMapping.Key);
-                                  UserHandler.UserMappings.Remove(userMapping.Key);
-                                  await this.Clients.Others.SendAsync("ViewerDisconnected");
-                              }
-                          }
-                      }
-                  });
-            }
-            else
-            {
-                await this.Clients.Caller.SendAsync("Unauthorised");
-            }
+			await this.Clients.All.SendAsync("RequestHeartbeat");
+			_ = Task.Run(async () =>
+			  {
+				  System.Threading.Thread.Sleep(10000);
+				  long heartbeatTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                  // Creates a shallow copy of the HubUser list and operates on that to avoid running into errors with
+                  // foreach() on a changed IEnumerable
+                  foreach (KeyValuePair<string, HubUser> userMapping in new Dictionary<string, HubUser>(UserHandler.UserMappings))
+				  {
+					  // If the last heartbeat time was more than 15s ago, should give some headroom with the 10s delay
+					  if (heartbeatTime - userMapping.Value.LastHeartbeatTime > 15)
+					  {
+						  try
+						  {
+							  await this.Clients.Client(userMapping.Key).SendAsync("ForceDisconnect");
+						  }
+						  finally
+						  {
+                              UserLogger.WriteLog(UserHandler.UserMappings[userMapping.Key].AspNetUsername, userMapping.Key, UserLogger.ConnectionStatus.Disconnected);
+
+                              UserHandler.ConnectedIds.Remove(userMapping.Key);
+							  UserHandler.UserMappings.Remove(userMapping.Key);
+							  await this.Clients.Others.SendAsync("ViewerDisconnected");
+						  }
+					  }
+				  }
+			  });
         }
 
         /// <summary>

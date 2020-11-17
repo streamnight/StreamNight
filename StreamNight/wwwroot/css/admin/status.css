@@ -16,7 +16,7 @@
     -ms-grid-column-span: 3;
 }
 
-#presenceForm {
+form {
     display: grid;
     grid-template-columns: 1fr 1fr;
     column-gap: 1rem;

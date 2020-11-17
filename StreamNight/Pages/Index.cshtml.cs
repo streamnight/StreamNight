@@ -39,6 +39,8 @@ namespace StreamNight.Pages
         public string RedirectTarget;
         public List<string> TwitchChannels;
 
+        public PlayerOptions PlayerOptions;
+
         private StreamMember _currentMember { get; set; }
 
         public StreamModel(DiscordBot discordBot)
@@ -54,6 +56,8 @@ namespace StreamNight.Pages
             RedirectPlaylist = _discordClient.RedirectPlaylist;
             RedirectTarget = _discordClient.RedirectTarget;
 			LogoPath = _discordClient.LogoWebPath;
+
+            PlayerOptions = _discordClient.PlayerOptions;
         }
 
         public async Task PopulateData()

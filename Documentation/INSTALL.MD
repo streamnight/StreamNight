@@ -4,7 +4,7 @@
 
 ### Runtime Prerequisites
 
-* [.NET Core 3.0 with ASP.NET Core](https://dotnet.microsoft.com/download)
+* [.NET Core 3.1 with ASP.NET Core](https://dotnet.microsoft.com/download)
 
 ### Configuring StreamNight
 
@@ -16,8 +16,8 @@ This file contains the settings for the frontend.
 
 | Property                        | Edit            | Example                            | Source                                                                                                            | Notes                                                                                                                                                                                                 |
 | ------------------------------- | --------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Anything in `Logging`           | Not recommended | N/A                                | [Microsoft Documentation](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-2.2) | Change `LogLevel` if you're having issues with the application and need extra debug information.                                                                                                      |
-| `AllowedHosts`                  | Yes             | "stream.example.com;localhost"     | Your stream's public hostname, plus `localhost`.                                                                  | This enables ASP.NET's host filtering middleware. See [this](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel?view=aspnetcore-2.2#host-filtering) page for more information. |
+| Anything in `Logging`           | Not recommended | N/A                                | [Microsoft Documentation](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/logging/?view=aspnetcore-3.1) | Change `LogLevel` if you're having issues with the application and need extra debug information.                                                                                                      |
+| `AllowedHosts`                  | Yes             | "stream.example.com;localhost"     | Your stream's public hostname, plus `localhost`.                                                                  | This enables ASP.NET's host filtering middleware. See [this](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel?view=aspnetcore-3.1#host-filtering) page for more information. |
 | Anything in `ConnectionStrings` | Not recommended | N/A                                | N/A                                                                                                               | `StreamNightContextConnection` controls where the user database is stored. It's generally safe to leave this at its default.                                                                          |
 | `Discord:AppId`                 | Yes             | "123456789012345678"               | Your Discord application's client ID.                                                                             |                                                                                                                                                                                                       |
 | `Discord:AppSecret`             | Yes             | "abcdefghijklmnopqrstuvwxyz123456" | Your Discord application's client secret.                                                                         |                                                                                                                                                                                                       |

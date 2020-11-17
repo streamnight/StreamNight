@@ -355,6 +355,7 @@ namespace StreamNight.SupportLibs
             {
                 get
                 {
+                    // TODO: Discord hasn't migrated their CDN over to discord.com yet, I'll need to change this when that happens
                     return $"https://cdn.discordapp.com/emojis/{this.Id}";
                 }
             }

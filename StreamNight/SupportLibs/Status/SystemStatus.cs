@@ -30,7 +30,8 @@ namespace StreamNight.SupportLibs.Status
             { "UseServerLogo", "UsingServerIcon" },
             { "Ready", "GuildReady" },
             { "Running", "BotRunning" },
-            { "WebhookChannelMatch", "WebhookAndChannelMatch" }
+            { "WebhookChannelMatch", "WebhookAndChannelMatch" },
+            { "Location", "PlayerLocation" }
         };
 
         /// <summary>
@@ -39,6 +40,7 @@ namespace StreamNight.SupportLibs.Status
         public string[] MonitoredProperties = new string[] 
         {
             "StreamUp",
+            "PlayerOptions",
             "TwitchEnabled",
             "StreamChannelName",
             "StreamRole",
@@ -115,7 +117,14 @@ namespace StreamNight.SupportLibs.Status
                         Dictionary<string, object> ComplexTypeProperties = UnwrapComplexType(propertyInfo);
                         foreach (KeyValuePair<string, object> complexTypeProperty in ComplexTypeProperties)
                         {
-                            StatusProperties.Add(complexTypeProperty.Key, complexTypeProperty.Value);
+                            if (PropertyNameChanges.ContainsKey(complexTypeProperty.Key))
+                            {
+                                StatusProperties.Add(PropertyNameChanges[complexTypeProperty.Key], complexTypeProperty.Value);
+                            }
+                            else
+                            {
+                                StatusProperties.Add(complexTypeProperty.Key, complexTypeProperty.Value);
+                            }
                         }
 
                         ComplexTypeTracker.Add(currentProperty.Name, ComplexTypeProperties);
@@ -186,7 +195,15 @@ namespace StreamNight.SupportLibs.Status
                         {
                             foreach (KeyValuePair<string, object> complexTypeProperty in ComplexTypeProperties)
                             {
-                                StatusProperties[complexTypeProperty.Key] = complexTypeProperty.Value;
+                                if (PropertyNameChanges.ContainsKey(complexTypeProperty.Key))
+                                {
+                                    StatusProperties[PropertyNameChanges[complexTypeProperty.Key]] = complexTypeProperty.Value;
+                                }
+                                else
+                                {
+                                    StatusProperties[complexTypeProperty.Key] = complexTypeProperty.Value;
+                                }
+                                ComplexTypeTracker[currentProperty.Name] = ComplexTypeProperties;
                             }
                             this.RaiseStatusChanged = true;
                         }

@@ -139,6 +139,11 @@ namespace StreamNight.SupportLibs.Discord
                 }
             } }
 
+        /// <summary>
+        /// The video player's options
+        /// </summary>
+        public PlayerOptions PlayerOptions { get; set; } = new PlayerOptions();
+
         public string LogoWebPath
         {
             get
@@ -394,7 +399,13 @@ namespace StreamNight.SupportLibs.Discord
                 }
                 else
                 {
-                    await webhookClient.Webhooks[0].ExecuteAsync(translatedContent, guildMember.DisplayName, guildMember.AvatarUrl, false, null, null);
+                    await webhookClient.Webhooks[0].ExecuteAsync(new DiscordWebhookBuilder()
+                    {
+                        Content = translatedContent,
+                        Username = guildMember.DisplayName,
+                        AvatarUrl = guildMember.AvatarUrl,
+                        IsTTS = false
+                    });
                 }
             }
             else if (message.SignalRMessage.Action == "DeleteMessage")
@@ -513,37 +524,35 @@ namespace StreamNight.SupportLibs.Discord
                 return;
             }
             bool logoDownloadSuccess = false;
-            using (HttpClient httpClient = new HttpClient())
+            using HttpClient httpClient = new HttpClient();
+            DiscordChannel chatChannel = await this.discordClient.GetChannelAsync(this.ChannelId);
+            _LogoWebPath = $"/images/logo.{chatChannel.Guild.IconUrl.Split('.').Last()}";
+            string currentDir = Directory.GetCurrentDirectory();
+            string LogoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", _LogoWebPath.Remove(0, 1).Replace('/', Path.DirectorySeparatorChar));
+            int i = 0;
+            do
             {
-                DiscordChannel chatChannel = await this.discordClient.GetChannelAsync(this.ChannelId);
-                _LogoWebPath = $"/images/logo.{chatChannel.Guild.IconUrl.Split('.').Last()}";
-                string currentDir = Directory.GetCurrentDirectory();
-                string LogoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", _LogoWebPath.Remove(0, 1).Replace('/', Path.DirectorySeparatorChar));
-                int i = 0;
-                do
+                using (HttpResponseMessage logoResponse = await httpClient.GetAsync(chatChannel.Guild.IconUrl))
                 {
-                    using (HttpResponseMessage logoResponse = await httpClient.GetAsync(chatChannel.Guild.IconUrl))
+                    if (logoResponse.IsSuccessStatusCode)
                     {
-                        if (logoResponse.IsSuccessStatusCode)
+                        using (FileStream fs1 = new FileStream(LogoPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, bufferSize: 4096, useAsync: true))
                         {
-                            using (FileStream fs1 = new FileStream(LogoPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, bufferSize: 4096, useAsync: true))
-                            {
-                                await (await logoResponse.Content.ReadAsStreamAsync()).CopyToAsync(fs1);
-                                await fs1.FlushAsync();
-                            }
-                            logoDownloadSuccess = true;
-                            LastLogoRefresh = DateTimeOffset.UtcNow;
-                            break;
+                            await (await logoResponse.Content.ReadAsStreamAsync()).CopyToAsync(fs1);
+                            await fs1.FlushAsync();
                         }
+                        logoDownloadSuccess = true;
+                        LastLogoRefresh = DateTimeOffset.UtcNow;
+                        break;
                     }
-                    i++;
-                    Thread.Sleep(5000);
-                    if (i > 5)
-                    {
-                        throw new FileLoadException("Could not download guild logo.");
-                    }
-                } while (!logoDownloadSuccess);
-            }
+                }
+                i++;
+                Thread.Sleep(5000);
+                if (i > 5)
+                {
+                    throw new FileLoadException("Could not download guild logo.");
+                }
+            } while (!logoDownloadSuccess);
         }
 
         /// <summary>
@@ -579,5 +588,70 @@ namespace StreamNight.SupportLibs.Discord
         public string PresenceMessage { get; set; } = string.Empty;
         public ActivityType ActivityType { get; set; } = ActivityType.Playing;
         public string TwitchUrl { get; set; } = string.Empty;
+    }
+
+    public class PlayerOptions
+    {
+        public PlayerLocation Location { get; set; }
+        public enum PlayerLocation
+        {
+            Top,
+            Center
+        }
+    }
+
+    public static class UserLogger
+    {
+        private static Task LogWriter;
+        private static Queue<string> LogQueue = new Queue<string>();
+
+        public enum ConnectionStatus
+        {
+            Connected,
+            Disconnected
+        }
+
+        private static async Task WriteLogs()
+        {
+            if (LogWriter != null 
+                && LogWriter.Id != Task.CurrentId
+                && LogWriter.Status == TaskStatus.Running)
+            {
+                throw new InvalidOperationException("Attempted to run multiple log writers.");
+            }
+
+            if (!Directory.Exists("UserLogs"))
+            {
+                Directory.CreateDirectory("UserLogs");
+            }
+
+            StreamWriter streamWriter = new StreamWriter(new FileStream("UserLogs" + Path.DirectorySeparatorChar + DateTimeOffset.UtcNow.ToString("yyyy-MM-dd"), FileMode.Append, FileAccess.Write));
+
+            while (LogQueue.Count > 0)
+            {
+                await streamWriter.WriteAsync(LogQueue.Dequeue());
+            }
+
+            await streamWriter.FlushAsync();
+            streamWriter.Close();
+        }
+
+        public static void WriteLog(string userId, string connectionId, ConnectionStatus connectionStatus)
+        {
+            string userAction = connectionStatus switch
+            {
+                ConnectionStatus.Connected => "CONN",
+                ConnectionStatus.Disconnected => "DISCONN",
+                _ => throw new ArgumentException(nameof(connectionStatus))
+            };
+
+            LogQueue.Enqueue($"[{DateTimeOffset.UtcNow.ToUnixTimeSeconds()};{userId};{connectionId};{userAction}]\n");
+
+            // Ugly but needs it because it's a nullable bool
+            if (LogWriter?.IsCompleted != false)
+            {
+                LogWriter = Task.Run(WriteLogs);
+            }
+        }
     }
 }

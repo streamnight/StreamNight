@@ -9,7 +9,7 @@ function openTab(tabName) {
     var streams = Array.from(document.getElementsByClassName("streamItem"));
 
     var currentTwitchIndex = twitchPlayers.findIndex(function (element) {
-        return element._bridge._playerState.channelName == tabName;
+        return element.getChannel().channelName == tabName;
     });
 
     for (var i = 0; i < twitchPlayers.length; i++) {

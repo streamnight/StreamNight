@@ -52,6 +52,6 @@ It's possible to have a [self-contained deployment](https://docs.microsoft.com/e
 **Unfortunately, publish profiles don't seem to be working so you'll need to manually specify the options on the command-line.**
 
 1. Open a terminal in the project folder.
-2. Run `dotnet publish -c Release -f netcoreapp3.0 -o bin\pub\Release\netcoreapp3.0\`
+2. Run `dotnet publish -c Release -f netcoreapp3.1 -o bin\pub\Release\netcoreapp3.1\`
 
 After compiling StreamNight, follow the instructions for pre-built binaries on the installation page.

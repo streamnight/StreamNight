@@ -8,8 +8,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace StreamNight.Areas.Admin.Pages
 {
     [Authorize(Roles = "Administrator")]
@@ -22,7 +20,7 @@ namespace StreamNight.Areas.Admin.Pages
         [HttpPost]
         public async Task<IActionResult> PostAsync([FromBody]string value)
         {
-            if (value.StartsWith("https://discordapp.com/api/webhooks/"))
+            if (value.StartsWith("https://discord.com/api/webhooks/"))
             {
                 Stream discordWebhookResponse = await httpClient.GetStreamAsync(value);
                 DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(DiscordWebhookResponse));

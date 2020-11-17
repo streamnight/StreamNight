@@ -6,6 +6,28 @@ Releases are currently referred to by date.
 
 **This document follows the ISO 8601 date format.**
 
+## 2020-11-17
+
+### Bug Fixes
+
+* Fixed compatibility with DSharpPlus alpha packages
+* Fixed custom property names on the status page not using the correct names
+* Fixed Discord logins through reverse proxies
+* Fixed Twitch chat integration
+* Fixed Discord API endpoint URLs
+
+### Improvements
+
+* Migrated to ASP.NET Core Authorization for SignalR endpoints
+* Minor code style changes
+
+### New Features
+
+* Added the ability to move the video player to the center of the free space
+* Added SignalR connection logs - change the UserLogger class if you'd like to remove this
+
+*Forked from development commit e104333a287789dcd51971a7ca920980f3362f6d*
+
 ## 2020-03-26
 
 ### Bug Fixes

@@ -24,6 +24,15 @@
     {
         <link rel="stylesheet" href="~/css/tabs.css" />
     }
+
+    @if (Model.PlayerOptions.Location == SupportLibs.Discord.PlayerOptions.PlayerLocation.Center)
+    {
+        <style>
+            #video {
+                justify-content: center;
+            }
+        </style>
+    }
 </head>
 <body>
     <div class="hidden emojiDeselect"></div>
@@ -94,6 +103,7 @@
             <div id="totalLength"></div>
             <div id="playlistRedirected">Playlist Redirected: @Model.RedirectPlaylist</div>
             <div id="playlistSource"></div>
+            <div id="playerLocation">Player Location: @Model.PlayerOptions.Location</div>
 
             <script>
                 var tracks;
@@ -177,7 +187,7 @@
             <div id="twitchChat" class="chatPanel hidden">
                 @foreach (string twitchChannelChat in Model.TwitchChannels)
                 {
-                    <iframe id="chat-@twitchChannelChat" class="twitchChat streamItem hidden" frameborder="0" scrolling="no" src="https://www.twitch.tv/embed/@twitchChannelChat/chat?darkpopout"></iframe>
+                    <iframe id="chat-@twitchChannelChat" class="twitchChat streamItem hidden" frameborder="0" scrolling="no" src="https://www.twitch.tv/embed/@twitchChannelChat/chat?darkpopout&parent=@HttpContext.Request.Host.Host"></iframe>
                 }
             </div>
         }

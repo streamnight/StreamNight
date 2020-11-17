@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -44,6 +45,11 @@ namespace StreamNight
                 options.Conventions.AuthorizeAreaPage("Account", "/Logout");
             });
 
+            services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
+            });
+
             services.Configure<CookiePolicyOptions>(options =>
             {
                 options.MinimumSameSitePolicy = SameSiteMode.Unspecified;
@@ -56,9 +62,9 @@ namespace StreamNight
             services.AddAuthentication()
                 .AddOAuth("Discord", "Discord", options =>
                 {
-                    options.AuthorizationEndpoint = "https://discordapp.com/api/oauth2/authorize";
-                    options.TokenEndpoint = "https://discordapp.com/api/oauth2/token";
-                    options.UserInformationEndpoint = "https://discordapp.com/api/users/@me";
+                    options.AuthorizationEndpoint = "https://discord.com/api/oauth2/authorize";
+                    options.TokenEndpoint = "https://discord.com/api/oauth2/token";
+                    options.UserInformationEndpoint = "https://discord.com/api/users/@me";
 
                     options.ClientId = Configuration["Discord:AppId"];
                     options.ClientSecret = Configuration["Discord:AppSecret"];
@@ -80,16 +86,14 @@ namespace StreamNight
                             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", context.AccessToken);
 
-                            using (HttpResponseMessage response = await context.Backchannel.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.HttpContext.RequestAborted))
+                            using HttpResponseMessage response = await context.Backchannel.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.HttpContext.RequestAborted);
+                            if (!response.IsSuccessStatusCode)
                             {
-                                if (!response.IsSuccessStatusCode)
-                                {
-                                    response.EnsureSuccessStatusCode();
-                                }
-
-                                using var userPayload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-                                context.RunClaimActions(userPayload.RootElement);
+                                response.EnsureSuccessStatusCode();
                             }
+
+                            using var userPayload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                            context.RunClaimActions(userPayload.RootElement);
                         }
                     };
                 });
