@@ -97,7 +97,7 @@ namespace StreamNight.SupportLibs.Discord
             }
             else
             {
-                DiscordGuild streamGuild = (await messageEvent.Client.GetChannelAsync(StreamChannel)).Guild;
+                DiscordGuild streamGuild = messageEvent.Guild.GetChannel(StreamChannel).Guild;
                 if (await streamGuild.GetMemberAsync(message.Author.Id) == null)
                 {
                     await message.RespondAsync(embed: PresetEmbeds.ErrorEmbed($"We can't find you in our guild. are you part of {streamGuild.Name}?", message).Build());

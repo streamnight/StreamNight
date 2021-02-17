@@ -218,7 +218,7 @@ namespace StreamNight.Areas.Account.Pages
                         return LocalRedirect(returnUrl);
                     }
                 }
-                else if (result.Errors.Where(e => e.Code == "DuplicateUserName").Count() > 0)
+                else if (result.Errors.Where(e => e.Code == "DuplicateUserName").Any())
                 {
                     var existingUser = await _userManager.FindByNameAsync(DiscordId.ToString());
                     var addLoginResult = await _userManager.AddLoginAsync(existingUser, info);

@@ -6,6 +6,19 @@ Releases are currently referred to by date.
 
 **This document follows the ISO 8601 date format.**
 
+# 2020-02-17
+
+### Bug Fixes
+
+* Fix race condition in UserHandler
+
+### Improvements
+
+* Updated to .NET 5.0
+* Updated dependencies
+
+*Forked from development commit ad33d35522bbf03a17224e31a4e17126169ec87a*
+
 ## 2020-11-17
 
 ### Bug Fixes

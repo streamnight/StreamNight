@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using DSharpPlus;
 
 namespace StreamNight.SupportLibs.Discord
 {
@@ -40,7 +41,7 @@ namespace StreamNight.SupportLibs.Discord
             this.config = config;
         }
 
-        public async Task Created(MessageCreateEventArgs messageEvent)
+        public async Task Created(DiscordClient client, MessageCreateEventArgs messageEvent)
         {
             if (messageEvent.Channel.Id == ChannelId)
             {
@@ -70,7 +71,7 @@ namespace StreamNight.SupportLibs.Discord
             await commands.ProcessCommand(messageEvent);
         }
 
-        public async Task Edited(MessageUpdateEventArgs messageEvent)
+        public async Task Edited(DiscordClient client, MessageUpdateEventArgs messageEvent)
         {
             if (messageEvent.Channel.Id == ChannelId)
             {
@@ -94,7 +95,7 @@ namespace StreamNight.SupportLibs.Discord
             }
         }
 
-        public async Task Deleted(MessageDeleteEventArgs messageEvent)
+        public async Task Deleted(DiscordClient client, MessageDeleteEventArgs messageEvent)
         {
             if (messageEvent.Channel.Id == ChannelId)
             {
@@ -118,7 +119,7 @@ namespace StreamNight.SupportLibs.Discord
             }
         }
 
-        public async Task Typing(TypingStartEventArgs typingEvent)
+        public async Task Typing(DiscordClient client, TypingStartEventArgs typingEvent)
         {
             if (typingEvent.Channel.Id == ChannelId)
             {

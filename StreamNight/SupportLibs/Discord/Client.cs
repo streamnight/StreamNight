@@ -15,6 +15,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Threading;
 using StreamNight.SupportLibs.Status;
+using Microsoft.Extensions.Logging;
 
 namespace StreamNight.SupportLibs.Discord
 {
@@ -201,8 +202,7 @@ namespace StreamNight.SupportLibs.Discord
                 TokenType = TokenType.Bot,
 
                 AutoReconnect = true,
-                LogLevel = LogLevel.Debug,
-                UseInternalLogHandler = true
+                MinimumLogLevel = LogLevel.Debug
             };
 
             MessageHandler = new MessageHandler(new MessageHandlerConfig
@@ -263,9 +263,9 @@ namespace StreamNight.SupportLibs.Discord
             }
         }
 
-        private async Task Client_Ready(ReadyEventArgs e)
+        private async Task Client_Ready(DiscordClient client, ReadyEventArgs e)
         {
-            e.Client.DebugLogger.LogMessage(LogLevel.Info, "WebChat", "Client is ready to process events.", DateTime.Now);
+            client.Logger.LogInformation("Client is ready to process events.", DateTime.Now);
 
             await this.SetPresence(new PresenceData
             {
@@ -273,12 +273,12 @@ namespace StreamNight.SupportLibs.Discord
                 PresenceMessage = this.botConfig.PresenceMessage
             });
 
-            e.Client.DebugLogger.LogMessage(LogLevel.Info, "WebChat", "Updated presence from configuration.", DateTime.Now);
+            client.Logger.LogInformation("Updated presence from configuration.", DateTime.Now);
         }
 
-        private Task Client_GuildAvailable(GuildCreateEventArgs e)
+        private Task Client_GuildAvailable(DiscordClient client, GuildCreateEventArgs e)
         {
-            e.Client.DebugLogger.LogMessage(LogLevel.Info, "WebChat", $"Guild available: {e.Guild.Name}", DateTime.Now);
+            client.Logger.LogInformation($"Guild available: {e.Guild.Name}", DateTime.Now);
 
             if (e.Guild.Id == this.GuildId)
             {
@@ -291,9 +291,9 @@ namespace StreamNight.SupportLibs.Discord
             return Task.CompletedTask;
         }
 
-        private Task Client_GuildUnavailable(GuildDeleteEventArgs e)
+        private Task Client_GuildUnavailable(DiscordClient client, GuildDeleteEventArgs e)
         {
-            e.Client.DebugLogger.LogMessage(LogLevel.Warning, "WebChat", $"Guild not available: {e.Guild.Name}", DateTime.Now);
+            client.Logger.LogWarning($"Guild not available: {e.Guild.Name}", DateTime.Now);
 
             if (e.Guild.Id == this.GuildId)
             {
@@ -308,9 +308,9 @@ namespace StreamNight.SupportLibs.Discord
         /// </summary>
         /// <param name="e">The event holding the error.</param>
         /// <returns>The task representing the method's execution state.</returns>
-        private Task Client_ClientError(ClientErrorEventArgs e)
+        private Task Client_ClientError(DiscordClient client, ClientErrorEventArgs e)
         {
-            e.Client.DebugLogger.LogMessage(LogLevel.Error, "WebChat", $"Exception occured: {e.Exception.GetType()}: {e.Exception.Message}", DateTime.Now);
+            client.Logger.LogError($"Exception occured: {e.Exception.GetType()}: {e.Exception.Message}", DateTime.Now);
             return Task.CompletedTask;
         }
 
@@ -319,7 +319,7 @@ namespace StreamNight.SupportLibs.Discord
         /// </summary>
         /// <param name="e">The ChannelUpdateEventArgs event.</param>
         /// <returns>The task representing the method's execution state.</returns>
-        private Task Client_ChannelUpdated(ChannelUpdateEventArgs e)
+        private Task Client_ChannelUpdated(DiscordClient client, ChannelUpdateEventArgs e)
         {
             if (e.ChannelAfter.Id == this.ChannelId)
             {

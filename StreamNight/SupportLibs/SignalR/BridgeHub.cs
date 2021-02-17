@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using System.IO;
 using StreamNight.SupportLibs.Discord;
+using System.Collections.Concurrent;
 
 namespace StreamNight.SupportLibs.SignalR
 {
@@ -185,7 +186,10 @@ namespace StreamNight.SupportLibs.SignalR
         /// <returns>A Task representing the state of the request.</returns>
         public override Task OnConnectedAsync()
         {
-            UserHandler.ConnectedIds.Add(Context.ConnectionId);
+            lock (UserHandler.ConnectedIds)
+            {
+                UserHandler.ConnectedIds.Add(Context.ConnectionId);
+            }
 
             HubUser user = new HubUser
             {
@@ -193,7 +197,7 @@ namespace StreamNight.SupportLibs.SignalR
                 HasDiscordInfo = null
             };
 
-            UserHandler.UserMappings.Add(Context.ConnectionId, user);
+            UserHandler.UserMappings.TryAdd(Context.ConnectionId, user);
 
             UserLogger.WriteLog(Context.User.Identity.Name, Context.ConnectionId, UserLogger.ConnectionStatus.Connected);
 
@@ -210,8 +214,11 @@ namespace StreamNight.SupportLibs.SignalR
         {
             UserLogger.WriteLog(Context.User.Identity.Name, Context.ConnectionId, UserLogger.ConnectionStatus.Disconnected);
 
-            UserHandler.ConnectedIds.Remove(Context.ConnectionId);
-            UserHandler.UserMappings.Remove(Context.ConnectionId);
+            lock (UserHandler.ConnectedIds)
+            {
+                UserHandler.ConnectedIds.Remove(Context.ConnectionId);
+            }
+            UserHandler.UserMappings.TryRemove(Context.ConnectionId, out _);
             // Notify other clients of user disconnection.
             this.Clients.Others.SendAsync("ViewerDisconnected");
             return base.OnDisconnectedAsync(e);
@@ -246,8 +253,11 @@ namespace StreamNight.SupportLibs.SignalR
 		[Authorize(Roles = "StreamController,Administrator")]
         public async Task AdminForceDisconnect()
         {
-			UserHandler.ConnectedIds.Clear();
-			UserHandler.UserMappings.Clear();
+            lock (UserHandler.ConnectedIds)
+            {
+                UserHandler.ConnectedIds.Clear();
+            }
+            UserHandler.UserMappings.Clear();
 			await this.Clients.All.SendAsync("ForceDisconnect");
         }
 
@@ -258,8 +268,11 @@ namespace StreamNight.SupportLibs.SignalR
 		[Authorize(Roles = "StreamController,Administrator")]
         public async Task AdminForceRefresh()
         {
-			UserHandler.ConnectedIds.Clear();
-			UserHandler.UserMappings.Clear();
+            lock (UserHandler.ConnectedIds)
+            {
+                UserHandler.ConnectedIds.Clear();
+            }
+            UserHandler.UserMappings.Clear();
 			await this.Clients.All.SendAsync("ForceRefresh");
         }
 
@@ -290,8 +303,11 @@ namespace StreamNight.SupportLibs.SignalR
 						  {
                               UserLogger.WriteLog(UserHandler.UserMappings[userMapping.Key].AspNetUsername, userMapping.Key, UserLogger.ConnectionStatus.Disconnected);
 
-                              UserHandler.ConnectedIds.Remove(userMapping.Key);
-							  UserHandler.UserMappings.Remove(userMapping.Key);
+                              lock (UserHandler.ConnectedIds)
+                              {
+                                  UserHandler.ConnectedIds.Remove(userMapping.Key);
+                              }
+                              UserHandler.UserMappings.TryRemove(userMapping.Key, out _);
 							  await this.Clients.Others.SendAsync("ViewerDisconnected");
 						  }
 					  }
@@ -322,7 +338,7 @@ namespace StreamNight.SupportLibs.SignalR
         /// <summary>
         /// The mappings for connection IDs to HubUsers.
         /// </summary>
-        public static Dictionary<string, HubUser> UserMappings = new Dictionary<string, HubUser>();
+        public static ConcurrentDictionary<string, HubUser> UserMappings = new ConcurrentDictionary<string, HubUser>();
     }
 
     public class HubUser
